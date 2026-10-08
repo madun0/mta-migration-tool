@@ -1,0 +1,19 @@
+projectName: customer-portal
+profile: standard
+mta:
+  # Legacy scalar target remains supported; targets is the preferred explicit scope.
+  target: eap8
+  sources:
+    - eap7
+    - jsf2
+    - primefaces6
+  targets:
+    - eap8
+    - faces4
+    - primefaces16
+  mode: full
+validation:
+  compileAfterFamily: true
+  runTestsOnVerify: true
+rewrite:
+  dryRunBeforeApply: true

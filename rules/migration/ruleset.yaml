@@ -1,0 +1,7 @@
+name: mta-migration-tool-custom
+# One MTA ruleset for all Workbench custom assessment rules.
+# Source/target selection remains on each individual rule so profiles can
+# independently select Faces and PrimeFaces migration concerns.
+description: Custom assessment rules for JSF 2 to Jakarta Faces 4 and PrimeFaces 6.2 to PrimeFaces 16 migrations.
+labels:
+  - workbench.io/ruleset=jsf-primefaces-modernization

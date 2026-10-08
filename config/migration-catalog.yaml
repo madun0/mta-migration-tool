@@ -1,0 +1,655 @@
+version: '1.0'
+recipeArtifactCoordinates: com.jackson.mta:primefaces-openrewrite-recipes:1.0.0-SNAPSHOT
+rewritePluginVersion: 6.46.1
+rewriteRepositoryUrl: ''
+profiles:
+  standard:
+    description: Full guided migration from JSF 2.2 / PrimeFaces 6.2 toward JBoss EAP 8 / Jakarta Faces 4 / PrimeFaces 16.
+    phases:
+    - PREPARE
+    - PRIMEFACES_CORE
+    - PRIMEFACES_DATA
+    - PRIMEFACES_COMPONENTS
+    - MANUAL_REVIEW
+    - FOUNDATION
+    - PRIMEFACES_BASELINE
+    - CLEANUP
+    - VALIDATION
+  primefaces-only:
+    description: Run PrimeFaces modernization while the legacy PrimeFaces 6.2 / JSF source APIs are still resolvable. Legacy-type-aware
+      source recipes run before the PrimeFaces 16 dependency upgrade.
+    phases:
+    - PRIMEFACES_CORE
+    - PRIMEFACES_DATA
+    - PRIMEFACES_COMPONENTS
+    - MANUAL_REVIEW
+    - PRIMEFACES_BASELINE
+    - CLEANUP
+    - VALIDATION
+  assessment-only:
+    description: Assessment and planning only. No source transformations.
+    phases:
+    - FOUNDATION
+families:
+  platform-baseline:
+    description: Confirm the application build targets Java 21 and the supported JBoss EAP 8 / Jakarta EE 10 platform baseline
+      before source modernization.
+    phase: PREPARE
+    automation: ASSISTED
+    mtaRuleIds: []
+    mtaRulePrefixes: []
+    recipes:
+    - com.jackson.mta.foundation.PlatformBaselineJava21
+    cleanupRecipes: []
+    guide: docs/FOUNDATION-MIGRATION.md
+    forbiddenPatterns: []
+    always: true
+    reviewChecklist:
+    - Confirm the application runs on the customer-approved JBoss EAP 8 release.
+    - Confirm the build is configured for Java 21; defer compilation until the Jakarta foundation transformations are complete.
+    - Review server-specific modules, JVM flags and deployment packaging that are outside source automation.
+    compileAfterApply: false
+  faces-managed-beans:
+    description: Migrate removed JSF managed-bean, ManagedProperty and legacy JSF scope facilities to CDI/Jakarta Faces equivalents
+      as one coherent task.
+    phase: FOUNDATION
+    automation: ASSISTED
+    mtaRuleIds:
+    - eap8-faces-00002
+    - eap8-faces-00003
+    - eap8-faces-00004
+    - faces4-managed-bean-0001
+    - faces4-managed-property-0001
+    - faces4-legacy-scopes-0001
+    mtaRulePrefixes: []
+    recipes:
+    - com.jackson.mta.foundation.MigrateFacesManagedBeans
+    cleanupRecipes: []
+    guide: docs/FOUNDATION-MIGRATION.md
+    forbiddenPatterns:
+    - javax.faces.bean.
+    - jakarta.faces.bean.
+    always: false
+    reviewChecklist:
+    - Replace remaining @ManagedBean annotations with CDI @Named; preserve explicit bean names where required by EL.
+    - Replace @ManagedProperty with CDI @Inject or jakarta.faces.annotation.ManagedProperty + @Inject when EL-valued injection
+      is required.
+    - Verify ViewScoped beans implement Serializable and injected dependencies are passivation-capable where required.
+    - Review eager managed-bean initialization; CDI @Named has no direct eager=true equivalent.
+    - Run affected page and bean lifecycle tests after conversion.
+    compileAfterApply: false
+  jakarta-dependencies:
+    description: Consolidate Maven findings that replace legacy javax artifacts/groupIds with Jakarta EE dependencies appropriate
+      for EAP 8.
+    phase: FOUNDATION
+    automation: AUTOMATIC
+    mtaRuleIds: []
+    mtaRulePrefixes:
+    - maven-javax-to-jakarta-
+    - javax-to-jakarta-dependencies-
+    recipes:
+    - com.jackson.mta.foundation.MigrateJakartaDependencies
+    cleanupRecipes: []
+    guide: docs/FOUNDATION-MIGRATION.md
+    forbiddenPatterns:
+    - <groupId>javax.
+    - <artifactId>javax.
+    always: true
+    reviewChecklist:
+    - Verify resulting Jakarta API dependencies are compatible with the EAP 8 BOM/dependency-management strategy.
+    - Remove redundant API versions when the target EAP BOM manages them.
+    - Defer compilation until the Jakarta dependency, import, descriptor, and Faces source transformations for this phase
+      have completed.
+    compileAfterApply: false
+  jakarta-imports:
+    description: Migrate Java source imports from javax namespaces to their Jakarta equivalents where the API moved.
+    phase: FOUNDATION
+    automation: AUTOMATIC
+    mtaRuleIds:
+    - javax-to-jakarta-import-00001
+    mtaRulePrefixes: []
+    recipes:
+    - com.jackson.mta.foundation.MigrateJavaxImports
+    cleanupRecipes: []
+    guide: docs/FOUNDATION-MIGRATION.md
+    forbiddenPatterns:
+    - import javax.faces.
+    - import javax.validation.
+    - import javax.annotation.
+    - import javax.servlet.
+    - import javax.persistence.
+    always: false
+    reviewChecklist:
+    - Do not migrate Java SE javax packages such as javax.crypto, javax.net, javax.sql or javax.xml.parsers.
+    - During phase validation, compile to identify removed Jakarta EE APIs that require semantic migration rather than package
+      rename.
+    compileAfterApply: false
+  jakarta-descriptors:
+    description: Modernize Jakarta EE deployment descriptor namespaces, schemas, versions and javax-prefixed descriptor class
+      references.
+    phase: FOUNDATION
+    automation: AUTOMATIC
+    mtaRuleIds: []
+    mtaRulePrefixes:
+    - javaee-to-jakarta-namespaces-
+    - javax-to-jakarta-servlet-
+    - javax-to-jakarta-properties-
+    - javax-to-jakarta-bootstrapping-files-
+    recipes:
+    - com.jackson.mta.foundation.MigrateJakartaDescriptors
+    cleanupRecipes: []
+    guide: docs/FOUNDATION-MIGRATION.md
+    forbiddenPatterns:
+    - http://xmlns.jcp.org/xml/ns/javaee
+    - web-app_3_1.xsd
+    - web-facesconfig_2_2.xsd
+    - http://xmlns.jcp.org/xml/ns/persistence
+    - persistence_2_1.xsd
+    always: false
+    reviewChecklist:
+    - Validate web.xml against the Servlet 6.0 schema and faces-config.xml against the Faces 4.0 schema.
+    - Review descriptor entries that reference application or vendor-specific classes before changing package names.
+    compileAfterApply: false
+  faces-compatibility:
+    description: Review remaining JSF 2 to Jakarta Faces 4 compatibility findings such as removed APIs, legacy namespaces,
+      JSP views and configuration behavior.
+    phase: FOUNDATION
+    automation: MANUAL
+    mtaRuleIds:
+    - faces4-native-el-package-0001
+    - faces4-method-binding-0001
+    - faces4-value-binding-0001
+    - faces4-resource-resolver-0001
+    - faces4-pre-jsf2-exception-factory-0001
+    - faces4-current-component-constants-0001
+    - faces4-jsp-views-0001
+    - faces4-jsp-servlet-mapping-0001
+    - faces4-faces-config-managed-bean-0001
+    - faces4-old-facelets-namespace-0001
+    - faces4-old-jstl-namespace-0001
+    - faces4-jsf-javascript-api-0001
+    - faces4-jsf-secret-jndi-0001
+    mtaRulePrefixes:
+    - eap8-faces-
+    - jakarta-faces-
+    recipes: []
+    cleanupRecipes: []
+    guide: docs/FOUNDATION-MIGRATION.md
+    forbiddenPatterns: []
+    always: false
+    reviewChecklist: []
+    compileAfterApply: true
+  jakarta-cdi:
+    description: Review CDI changes required by the Jakarta EE/EAP 8 target, including removed or changed CDI behavior.
+    phase: FOUNDATION
+    automation: MANUAL
+    mtaRuleIds: []
+    mtaRulePrefixes:
+    - jakarta-cdi-
+    - empty-beans-xml-
+    recipes: []
+    cleanupRecipes: []
+    guide: docs/FOUNDATION-MIGRATION.md
+    forbiddenPatterns: []
+    always: false
+    reviewChecklist: []
+    compileAfterApply: true
+  eap8-ejb:
+    description: Review EJB compatibility findings for JBoss EAP 8 and Jakarta Enterprise Beans.
+    phase: FOUNDATION
+    automation: MANUAL
+    mtaRuleIds: []
+    mtaRulePrefixes:
+    - eap8-ejb-
+    recipes: []
+    cleanupRecipes: []
+    guide: docs/FOUNDATION-MIGRATION.md
+    forbiddenPatterns: []
+    always: false
+    reviewChecklist: []
+    compileAfterApply: true
+  eap8-rest:
+    description: Review RESTEasy and Jakarta REST compatibility changes required for JBoss EAP 8.
+    phase: FOUNDATION
+    automation: MANUAL
+    mtaRuleIds: []
+    mtaRulePrefixes:
+    - eap8-resteasy-
+    - jakarta-ws-rs-
+    recipes: []
+    cleanupRecipes: []
+    guide: docs/FOUNDATION-MIGRATION.md
+    forbiddenPatterns: []
+    always: false
+    reviewChecklist: []
+    compileAfterApply: true
+  eap8-xml-binding:
+    description: Review XML binding compatibility changes required by EAP 8 and the Jakarta namespace transition.
+    phase: FOUNDATION
+    automation: MANUAL
+    mtaRuleIds: []
+    mtaRulePrefixes:
+    - eap8-xml-binding-
+    - jakarta-json-binding-
+    - jakarta-soap-
+    - jax-ws-
+    recipes: []
+    cleanupRecipes: []
+    guide: docs/FOUNDATION-MIGRATION.md
+    forbiddenPatterns: []
+    always: false
+    reviewChecklist: []
+    compileAfterApply: true
+  persistence-hibernate:
+    description: Review persistence and Hibernate API/behavior changes surfaced for the EAP 8 target.
+    phase: FOUNDATION
+    automation: MANUAL
+    mtaRuleIds: []
+    mtaRulePrefixes:
+    - hibernate6-
+    - hibernate-search-
+    - hibernate-
+    recipes: []
+    cleanupRecipes: []
+    guide: docs/FOUNDATION-MIGRATION.md
+    forbiddenPatterns: []
+    always: false
+    reviewChecklist: []
+    compileAfterApply: true
+  security-modernization:
+    description: Review legacy EAP security, authentication and identity integrations that require migration for EAP 8.
+    phase: FOUNDATION
+    automation: MANUAL
+    mtaRuleIds: []
+    mtaRulePrefixes:
+    - login-modules-
+    - legacy-vault-
+    - keycloak-openid-
+    - picketlink-
+    - elytron-eap71-
+    - deprecated-initialcontextfactory-
+    recipes: []
+    cleanupRecipes: []
+    guide: docs/FOUNDATION-MIGRATION.md
+    forbiddenPatterns: []
+    always: false
+    reviewChecklist: []
+    compileAfterApply: true
+  logging-modernization:
+    description: Review logging APIs or server modules removed or changed for the target EAP runtime.
+    phase: FOUNDATION
+    automation: MANUAL
+    mtaRuleIds: []
+    mtaRulePrefixes:
+    - log4j-removed-
+    recipes: []
+    cleanupRecipes: []
+    guide: docs/FOUNDATION-MIGRATION.md
+    forbiddenPatterns: []
+    always: false
+    reviewChecklist: []
+    compileAfterApply: true
+  jakarta-el:
+    description: Review Jakarta Expression Language migration findings that require source or configuration changes.
+    phase: FOUNDATION
+    automation: MANUAL
+    mtaRuleIds: []
+    mtaRulePrefixes:
+    - jakarta-el-
+    recipes: []
+    cleanupRecipes: []
+    guide: docs/FOUNDATION-MIGRATION.md
+    forbiddenPatterns: []
+    always: false
+    reviewChecklist: []
+    compileAfterApply: true
+  primefaces-baseline:
+    description: Upgrade the application PrimeFaces dependency from 6.2 to the PrimeFaces 16 Jakarta-compatible baseline and
+      review cross-version breaking changes.
+    phase: PRIMEFACES_BASELINE
+    automation: AUTOMATIC
+    mtaRuleIds:
+    - primefaces62-dependency-0001
+    mtaRulePrefixes: []
+    recipes:
+    - com.jackson.mta.foundation.UpgradePrimeFacesDependency
+    cleanupRecipes: []
+    guide: recipes/primefaces-openrewrite-recipes/README.md
+    forbiddenPatterns:
+    - <version>6.2</version>
+    always: false
+    reviewChecklist:
+    - Review the PrimeFaces 6.2 through 16 migration guides for application-specific breaking changes.
+    - Retest themes, custom JavaScript, custom components and widget integrations after the dependency upgrade.
+    compileAfterApply: true
+  request-context:
+    description: Replace supported PrimeFaces RequestContext APIs with PrimeFaces.current() and review unsupported or variable-based
+      usages.
+    phase: PRIMEFACES_CORE
+    automation: ASSISTED
+    mtaRuleIds:
+    - primefaces-request-context-0001
+    recipes:
+    - com.jackson.mta.primefaces.PrimeFaces62RequestContextMigration
+    cleanupRecipes: []
+    guide: recipes/primefaces-openrewrite-recipes/REQUESTCONTEXT-MIGRATION.md
+    forbiddenPatterns:
+    - org.primefaces.context.RequestContext
+    always: true
+    mtaRulePrefixes: []
+    reviewChecklist:
+    - Verify all supported RequestContext calls were migrated to PrimeFaces.current().
+    - Review remaining RequestContext variables or unsupported APIs and migrate them manually before final verification.
+    - Remove the RequestContext import after no legacy references remain.
+    compileAfterApply: false
+  file-upload:
+    description: Migrate UploadedFile types, listener attributes and legacy FileUpload configuration.
+    phase: PRIMEFACES_CORE
+    automation: ASSISTED
+    mtaRuleIds:
+    - primefaces-uploaded-file-package-0001
+    - primefaces-file-upload-listener-0001
+    - primefaces-uploaded-file-get-contents-0001
+    - primefaces-uploaded-file-get-inputstream-0001
+    - primefaces-commons-fileupload-filter-0001
+    - primefaces-old-fileupload-validation-attrs-0001
+    recipes:
+    - com.jackson.mta.primefaces.PrimeFaces62FileUploadMigration
+    cleanupRecipes: []
+    guide: recipes/primefaces-openrewrite-recipes/FILEUPLOAD-MIGRATION.md
+    forbiddenPatterns:
+    - org.primefaces.model.UploadedFile
+    - fileUploadListener=
+    always: false
+    mtaRulePrefixes: []
+    reviewChecklist:
+    - Verify UploadedFile method changes and the backing-bean listener signature.
+    - Verify p:validateFile behavior for size, file type, and content validation that previously used fileUpload attributes.
+    - Confirm legacy PrimeFaces FileUploadFilter and primefaces.UPLOADER=commons configuration are removed after native Servlet
+      multipart upload is validated.
+    - Exercise multipart upload on JBoss EAP 8, including failure and validation paths.
+    compileAfterApply: false
+  streamed-content:
+    description: Migrate ByteArrayContent and safe DefaultStreamedContent constructor patterns to builder/Supplier APIs.
+    phase: PRIMEFACES_CORE
+    automation: ASSISTED
+    mtaRuleIds:
+    - primefaces-byte-array-content-0001
+    - primefaces-lazy-streamed-content-0001
+    - primefaces-streamed-content-constructor-0001
+    recipes:
+    - com.jackson.mta.primefaces.PrimeFaces62StreamedContentMigration
+    cleanupRecipes: []
+    guide: recipes/primefaces-openrewrite-recipes/STREAMEDCONTENT-EDGE-MIGRATION.md
+    forbiddenPatterns:
+    - org.primefaces.model.ByteArrayContent
+    always: false
+    mtaRulePrefixes: []
+    reviewChecklist: []
+    compileAfterApply: false
+  programmatic-menu:
+    description: Migrate DynamicMenuModel and legacy programmatic menu construction APIs.
+    phase: PRIMEFACES_CORE
+    automation: AUTOMATIC
+    mtaRuleIds:
+    - primefaces-dynamic-menu-model-0001
+    - primefaces-menu-add-element-0001
+    recipes:
+    - com.jackson.mta.primefaces.PrimeFaces62MenuMigration
+    cleanupRecipes: []
+    guide: recipes/primefaces-openrewrite-recipes/MENU-MIGRATION.md
+    forbiddenPatterns:
+    - org.primefaces.model.menu.DynamicMenuModel
+    always: false
+    mtaRulePrefixes: []
+    reviewChecklist: []
+    compileAfterApply: false
+  primefaces-json:
+    description: Move application references from org.primefaces.json to the later shaded namespace.
+    phase: PRIMEFACES_CORE
+    automation: AUTOMATIC
+    mtaRuleIds:
+    - primefaces-json-package-0001
+    recipes:
+    - com.jackson.mta.primefaces.PrimeFaces62JsonMigration
+    cleanupRecipes: []
+    guide: recipes/primefaces-openrewrite-recipes/JSON-MIGRATION.md
+    forbiddenPatterns:
+    - org.primefaces.json.
+    always: false
+    mtaRulePrefixes: []
+    reviewChecklist: []
+    compileAfterApply: false
+  lazy-data-model:
+    description: Migrate LazyDataModel load/filter/sort signatures and add a conservative count bridge.
+    phase: PRIMEFACES_DATA
+    automation: ASSISTED
+    mtaRuleIds:
+    - primefaces-lazy-data-model-0001
+    recipes:
+    - com.jackson.mta.primefaces.PrimeFaces62LazyDataModelMigration
+    - com.jackson.mta.primefaces.PrimeFaces62LazyDataModelCountBridge
+    cleanupRecipes: []
+    guide: recipes/primefaces-openrewrite-recipes/LAZYDATAMODEL-MIGRATION.md
+    forbiddenPatterns: []
+    always: false
+    mtaRulePrefixes: []
+    reviewChecklist: []
+    compileAfterApply: false
+  datatable-filtering:
+    description: Migrate DataTable filtering method names and flag removed filterOptions UI semantics.
+    phase: PRIMEFACES_DATA
+    automation: ASSISTED
+    mtaRuleIds:
+    - primefaces-filter-options-0001
+    - primefaces-datatable-filter-api-0001
+    recipes:
+    - com.jackson.mta.primefaces.PrimeFaces62DataTableMigration
+    cleanupRecipes: []
+    guide: recipes/primefaces-openrewrite-recipes/DATATABLE-MIGRATION.md
+    forbiddenPatterns:
+    - filterOptions=
+    always: false
+    mtaRulePrefixes: []
+    reviewChecklist: []
+    compileAfterApply: false
+  rows-per-page:
+    description: Replace the removed rowsPerPageTemplate star shorthand.
+    phase: PRIMEFACES_DATA
+    automation: AUTOMATIC
+    mtaRuleIds:
+    - primefaces-rows-per-page-star-0001
+    recipes:
+    - com.jackson.mta.primefaces.PrimeFaces62RowsPerPageMigration
+    cleanupRecipes: []
+    guide: recipes/primefaces-openrewrite-recipes/ROWSPERPAGE-MIGRATION.md
+    forbiddenPatterns: []
+    always: false
+    mtaRulePrefixes: []
+    reviewChecklist: []
+    compileAfterApply: false
+  calendar:
+    description: Migrate p:calendar to p:datePicker while flagging date/time semantics that require review.
+    phase: PRIMEFACES_COMPONENTS
+    automation: ASSISTED
+    mtaRuleIds:
+    - primefaces-calendar-0001
+    recipes:
+    - com.jackson.mta.primefaces.PrimeFaces62CalendarToDatePicker
+    cleanupRecipes:
+    - com.jackson.mta.primefaces.PrimeFaces62CalendarCleanupAfterReview
+    guide: recipes/primefaces-openrewrite-recipes/CALENDAR-MIGRATION.md
+    forbiddenPatterns:
+    - <p:calendar
+    always: false
+    mtaRulePrefixes: []
+    reviewChecklist:
+    - Verify the target Java date/time type (LocalDate, LocalDateTime, LocalTime, or retained Date) matches application semantics.
+    - Verify date/time pattern, locale, timezone, and 12/24-hour behavior after p:calendar becomes p:datePicker.
+    - Verify minimum/maximum date restrictions, navigators, and popup/icon behavior.
+    - Exercise Ajax listeners, converters, validators, and any time-enabled calendar behavior before cleanup.
+    compileAfterApply: false
+  schedule:
+    description: Migrate Schedule Java event/date APIs and static XHTML view names.
+    phase: PRIMEFACES_COMPONENTS
+    automation: ASSISTED
+    mtaRuleIds:
+    - primefaces-schedule-0001
+    recipes:
+    - com.jackson.mta.primefaces.PrimeFaces62ScheduleMigration
+    cleanupRecipes: []
+    guide: recipes/primefaces-openrewrite-recipes/SCHEDULE-MIGRATION.md
+    forbiddenPatterns: []
+    always: false
+    mtaRulePrefixes: []
+    reviewChecklist: []
+    compileAfterApply: false
+  timeline:
+    description: Migrate TimelineEvent date/builders and high-confidence XHTML attributes.
+    phase: PRIMEFACES_COMPONENTS
+    automation: ASSISTED
+    mtaRuleIds:
+    - primefaces-timeline-0001
+    recipes:
+    - com.jackson.mta.primefaces.PrimeFaces62TimelineMigration
+    cleanupRecipes: []
+    guide: recipes/primefaces-openrewrite-recipes/TIMELINE-MIGRATION.md
+    forbiddenPatterns: []
+    always: false
+    mtaRulePrefixes: []
+    reviewChecklist: []
+    compileAfterApply: false
+  input-switch:
+    description: Replace removed p:inputSwitch with p:toggleSwitch while preserving visible-label review cases.
+    phase: PRIMEFACES_COMPONENTS
+    automation: ASSISTED
+    mtaRuleIds:
+    - primefaces-input-switch-0001
+    recipes:
+    - com.jackson.mta.primefaces.PrimeFaces62InputSwitchMigration
+    cleanupRecipes:
+    - com.jackson.mta.primefaces.PrimeFaces62InputSwitchCleanupAfterReview
+    guide: recipes/primefaces-openrewrite-recipes/INPUTSWITCH-MIGRATION.md
+    forbiddenPatterns:
+    - <p:inputSwitch
+    always: false
+    mtaRulePrefixes: []
+    reviewChecklist: []
+    compileAfterApply: false
+  repeat:
+    description: Replace removed p:repeat with standard ui:repeat and inventory direct Java coupling.
+    phase: PRIMEFACES_COMPONENTS
+    automation: AUTOMATIC
+    mtaRuleIds:
+    - primefaces-repeat-0001
+    recipes:
+    - com.jackson.mta.primefaces.PrimeFaces62RepeatMigration
+    cleanupRecipes: []
+    guide: recipes/primefaces-openrewrite-recipes/REPEAT-MIGRATION.md
+    forbiddenPatterns:
+    - <p:repeat
+    always: false
+    mtaRulePrefixes: []
+    reviewChecklist: []
+    compileAfterApply: false
+  input-mask:
+    description: Identify InputMask usages that require explicit masks or validation review.
+    phase: PRIMEFACES_COMPONENTS
+    automation: ASSISTED
+    mtaRuleIds:
+    - primefaces-input-mask-review-0001
+    recipes:
+    - com.jackson.mta.primefaces.PrimeFaces62InputMaskMigration
+    cleanupRecipes: []
+    guide: recipes/primefaces-openrewrite-recipes/INPUTMASK-MIGRATION.md
+    forbiddenPatterns: []
+    always: true
+    mtaRulePrefixes: []
+    reviewChecklist: []
+    compileAfterApply: false
+  overlay-panel:
+    description: Replace OverlayPanel appendToBody with appendTo search expressions.
+    phase: PRIMEFACES_COMPONENTS
+    automation: AUTOMATIC
+    mtaRuleIds:
+    - primefaces-overlay-append-to-body-0001
+    recipes:
+    - com.jackson.mta.primefaces.PrimeFaces62OverlayPanelMigration
+    cleanupRecipes: []
+    guide: recipes/primefaces-openrewrite-recipes/OVERLAYPANEL-MIGRATION.md
+    forbiddenPatterns:
+    - appendToBody=
+    always: false
+    mtaRulePrefixes: []
+    reviewChecklist: []
+    compileAfterApply: false
+  auto-update:
+    description: Replace removed autoUpdate attributes with p:autoUpdate where safe.
+    phase: PRIMEFACES_COMPONENTS
+    automation: ASSISTED
+    mtaRuleIds:
+    - primefaces-auto-update-attribute-0001
+    recipes:
+    - com.jackson.mta.primefaces.PrimeFaces62AutoUpdateMigration
+    cleanupRecipes: []
+    guide: recipes/primefaces-openrewrite-recipes/AUTOUPDATE-MIGRATION.md
+    forbiddenPatterns: []
+    always: false
+    mtaRulePrefixes: []
+    reviewChecklist: []
+    compileAfterApply: false
+  charts:
+    description: Inventory legacy chart models, add modern Chart.js scaffolding and guide manual model conversion.
+    phase: MANUAL_REVIEW
+    automation: ASSISTED
+    mtaRuleIds:
+    - primefaces-legacy-chart-model-0001
+    - primefaces-chart-component-review-0001
+    recipes:
+    - com.jackson.mta.primefaces.MigrateLegacyChartJavaModels
+    - com.jackson.mta.primefaces.PrimeFaces16ChartScaffold
+    cleanupRecipes:
+    - com.jackson.mta.primefaces.PrimeFaces16ChartXhtmlFinalize
+    guide: recipes/primefaces-openrewrite-recipes/CHART-MIGRATION.md
+    forbiddenPatterns: []
+    always: false
+    mtaRulePrefixes: []
+    reviewChecklist: []
+    compileAfterApply: false
+  push:
+    description: Identify removed PrimeFaces Push/Atmosphere usage and guide WebSocket redesign.
+    phase: MANUAL_REVIEW
+    automation: ASSISTED
+    mtaRuleIds:
+    - primefaces-push-0001
+    recipes:
+    - com.jackson.mta.primefaces.PrimeFaces62PushMigration
+    cleanupRecipes: []
+    guide: recipes/primefaces-openrewrite-recipes/PUSH-MIGRATION.md
+    forbiddenPatterns:
+    - <p:socket
+    - org.primefaces.push
+    always: false
+    mtaRulePrefixes: []
+    reviewChecklist: []
+    compileAfterApply: false
+  facelet-watermark:
+    description: Migrate removed Facelet helper functions and flag obsolete Watermark JavaScript.
+    phase: MANUAL_REVIEW
+    automation: ASSISTED
+    mtaRuleIds:
+    - primefaces-facelet-functions-0001
+    - primefaces-watermark-client-api-0001
+    recipes:
+    - com.jackson.mta.primefaces.PrimeFaces62LegacyFaceletAndWatermarkMigration
+    cleanupRecipes: []
+    guide: recipes/primefaces-openrewrite-recipes/FACELET-WATERMARK-MIGRATION.md
+    forbiddenPatterns:
+    - p:component(
+    - p:widgetVar(
+    - PrimeFaces.cleanWatermarks
+    - PrimeFaces.showWatermarks
+    always: false
+    mtaRulePrefixes: []
+    reviewChecklist: []
+    compileAfterApply: false

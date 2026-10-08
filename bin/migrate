@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+if command -v cygpath >/dev/null 2>&1; then
+  export MTA_MIGRATE_HOME="$(cygpath -w "$ROOT")"
+else
+  export MTA_MIGRATE_HOME="$ROOT"
+fi
+JAR="$ROOT/migrate-cli/target/quarkus-app/quarkus-run.jar"
+if [[ ! -f "$JAR" ]]; then
+  echo "Workbench is not built. From $ROOT run: mvn clean install" >&2
+  exit 2
+fi
+exec java -jar "$JAR" "$@"

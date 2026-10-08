@@ -1,0 +1,269 @@
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: com.jackson.mta.foundation.PlatformBaselineJava21
+displayName: Normalize Maven compilation to Java 21
+description: >-
+  Normalizes existing Maven compiler source/target/release configuration to Java 21.
+  Runtime/server compatibility still requires developer verification against the approved JBoss EAP 8 release.
+recipeList:
+  - org.openrewrite.maven.UseMavenCompilerPluginReleaseConfiguration:
+      releaseVersion: 21
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: com.jackson.mta.foundation.MigrateJakartaDependencies
+displayName: Migrate common Java EE API dependencies to Jakarta EE 10 coordinates
+description: >-
+  Migrates common Java EE API Maven coordinates to Jakarta equivalents used by Jakarta EE 10 / JBoss EAP 8.
+  The compile gate and dependency review remain authoritative for application-specific dependencies and BOM management.
+recipeList:
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: javax
+      oldArtifactId: javaee-api
+      newGroupId: jakarta.platform
+      newArtifactId: jakarta.jakartaee-api
+      newVersion: 10.0.0
+      overrideManagedVersion: false
+      changeManagedDependency: true
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: javax.faces
+      oldArtifactId: javax.faces-api
+      newGroupId: jakarta.faces
+      newArtifactId: jakarta.faces-api
+      newVersion: 4.0.1
+      overrideManagedVersion: false
+      changeManagedDependency: true
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: javax.validation
+      oldArtifactId: validation-api
+      newGroupId: jakarta.validation
+      newArtifactId: jakarta.validation-api
+      newVersion: 3.0.2
+      overrideManagedVersion: false
+      changeManagedDependency: true
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: javax.annotation
+      oldArtifactId: javax.annotation-api
+      newGroupId: jakarta.annotation
+      newArtifactId: jakarta.annotation-api
+      newVersion: 3.0.0
+      overrideManagedVersion: false
+      changeManagedDependency: true
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: javax.servlet
+      oldArtifactId: javax.servlet-api
+      newGroupId: jakarta.servlet
+      newArtifactId: jakarta.servlet-api
+      newVersion: 6.0.0
+      overrideManagedVersion: false
+      changeManagedDependency: true
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: javax.persistence
+      oldArtifactId: javax.persistence-api
+      newGroupId: jakarta.persistence
+      newArtifactId: jakarta.persistence-api
+      newVersion: 3.1.0
+      overrideManagedVersion: false
+      changeManagedDependency: true
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: javax.ws.rs
+      oldArtifactId: javax.ws.rs-api
+      newGroupId: jakarta.ws.rs
+      newArtifactId: jakarta.ws.rs-api
+      newVersion: 3.1.0
+      overrideManagedVersion: false
+      changeManagedDependency: true
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: javax.transaction
+      oldArtifactId: javax.transaction-api
+      newGroupId: jakarta.transaction
+      newArtifactId: jakarta.transaction-api
+      newVersion: 2.0.1
+      overrideManagedVersion: false
+      changeManagedDependency: true
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: javax.xml.bind
+      oldArtifactId: jaxb-api
+      newGroupId: jakarta.xml.bind
+      newArtifactId: jakarta.xml.bind-api
+      newVersion: 4.0.2
+      overrideManagedVersion: false
+      changeManagedDependency: true
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: javax.ejb
+      oldArtifactId: javax.ejb-api
+      newGroupId: jakarta.ejb
+      newArtifactId: jakarta.ejb-api
+      newVersion: 4.0.1
+      overrideManagedVersion: false
+      changeManagedDependency: true
+  # These dependencies are additive because legacy applications do not always declare
+  # equivalent javax artifacts even when source migration introduces CDI/Annotation APIs.
+  - org.openrewrite.maven.AddDependency:
+      groupId: jakarta.annotation
+      artifactId: jakarta.annotation-api
+      version: 3.0.0
+  - org.openrewrite.maven.AddDependency:
+      groupId: jakarta.ejb
+      artifactId: jakarta.ejb-api
+      version: 4.0.1
+      scope: provided
+  - org.openrewrite.maven.AddDependency:
+      groupId: jakarta.enterprise
+      artifactId: jakarta.enterprise.cdi-api
+      version: 4.1.0
+      scope: provided
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: com.jackson.mta.foundation.MigrateJavaxImports
+displayName: Migrate Java EE javax imports to Jakarta packages
+description: >-
+  Renames only curated Jakarta EE packages. It deliberately avoids broad javax-to-jakarta replacement so Java SE
+  packages such as javax.crypto, javax.net, javax.sql and javax.xml.parsers remain untouched.
+recipeList:
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.annotation, newPackageName: jakarta.annotation, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.validation, newPackageName: jakarta.validation, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.servlet, newPackageName: jakarta.servlet, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.persistence, newPackageName: jakarta.persistence, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.enterprise, newPackageName: jakarta.enterprise, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.inject, newPackageName: jakarta.inject, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.ejb, newPackageName: jakarta.ejb, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.transaction, newPackageName: jakarta.transaction, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.ws.rs, newPackageName: jakarta.ws.rs, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.xml.bind, newPackageName: jakarta.xml.bind, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.json, newPackageName: jakarta.json, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.mail, newPackageName: jakarta.mail, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.activation, newPackageName: jakarta.activation, recursive: true }
+  # Faces is intentionally mapped by supported subpackage so removed javax.faces.bean APIs are not renamed into a non-existent jakarta.faces.bean package.
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.faces.application, newPackageName: jakarta.faces.application, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.faces.component, newPackageName: jakarta.faces.component, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.faces.context, newPackageName: jakarta.faces.context, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.faces.convert, newPackageName: jakarta.faces.convert, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.faces.event, newPackageName: jakarta.faces.event, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.faces.flow, newPackageName: jakarta.faces.flow, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.faces.lifecycle, newPackageName: jakarta.faces.lifecycle, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.faces.render, newPackageName: jakarta.faces.render, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.faces.validator, newPackageName: jakarta.faces.validator, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.faces.view, newPackageName: jakarta.faces.view, recursive: true }
+  - org.openrewrite.java.ChangePackage: { oldPackageName: javax.faces.webapp, newPackageName: jakarta.faces.webapp, recursive: true }
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: com.jackson.mta.foundation.MigrateJakartaDescriptors
+displayName: Migrate Java EE deployment descriptors to Jakarta EE 10 schemas
+description: >-
+  Normalizes common web.xml and faces-config.xml namespaces, schema locations, versions, and javax-prefixed container class references.
+recipeList:
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: //web-app
+      attributeName: xmlns
+      newValue: https://jakarta.ee/xml/ns/jakartaee
+      oldValue: http://xmlns.jcp.org/xml/ns/javaee
+      regex: false
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: //web-app
+      attributeName: version
+      newValue: "6.0"
+      oldValue: null
+      regex: false
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: //web-app
+      attributeName: xsi:schemaLocation
+      newValue: https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd
+      oldValue: ".*web-app_[0-9_]+\\.xsd.*"
+      regex: true
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: //faces-config
+      attributeName: xmlns
+      newValue: https://jakarta.ee/xml/ns/jakartaee
+      oldValue: http://xmlns.jcp.org/xml/ns/javaee
+      regex: false
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: //faces-config
+      attributeName: version
+      newValue: "4.0"
+      oldValue: null
+      regex: false
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: //faces-config
+      attributeName: xsi:schemaLocation
+      newValue: https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-facesconfig_4_0.xsd
+      oldValue: ".*web-facesconfig_[0-9_]+\\.xsd.*"
+      regex: true
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: //persistence
+      attributeName: xmlns
+      newValue: https://jakarta.ee/xml/ns/persistence
+      oldValue: http://xmlns.jcp.org/xml/ns/persistence
+      regex: false
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: //persistence
+      attributeName: version
+      newValue: "3.0"
+      oldValue: null
+      regex: false
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: //persistence
+      attributeName: xsi:schemaLocation
+      newValue: https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd
+      oldValue: ".*persistence_[0-9_]+\\.xsd.*"
+      regex: true
+  - org.openrewrite.xml.ChangeTagValue:
+      elementName: //servlet-class
+      oldValue: "^javax\\.(.*)$"
+      newValue: "jakarta.$1"
+      regex: true
+  - org.openrewrite.xml.ChangeTagValue:
+      elementName: //filter-class
+      oldValue: "^javax\\.(.*)$"
+      newValue: "jakarta.$1"
+      regex: true
+  - org.openrewrite.xml.ChangeTagValue:
+      elementName: //listener-class
+      oldValue: "^javax\\.(.*)$"
+      newValue: "jakarta.$1"
+      regex: true
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: com.jackson.mta.foundation.MigrateFacesManagedBeans
+displayName: Migrate safe JSF managed-bean scope types
+description: >-
+  Migrates JSF managed-bean scope annotations and converts removed @ManagedBean to CDI @Named, preserving explicit bean names.
+  @ManagedProperty and eager initialization semantics remain assisted-review items because CDI has no direct equivalent behavior.
+recipeList:
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: javax.faces.bean.ApplicationScoped
+      newFullyQualifiedTypeName: jakarta.enterprise.context.ApplicationScoped
+      ignoreDefinition: true
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: javax.faces.bean.RequestScoped
+      newFullyQualifiedTypeName: jakarta.enterprise.context.RequestScoped
+      ignoreDefinition: true
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: javax.faces.bean.SessionScoped
+      newFullyQualifiedTypeName: jakarta.enterprise.context.SessionScoped
+      ignoreDefinition: true
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: javax.faces.bean.ViewScoped
+      newFullyQualifiedTypeName: jakarta.faces.view.ViewScoped
+      ignoreDefinition: true
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: javax.faces.bean.NoneScoped
+      newFullyQualifiedTypeName: jakarta.enterprise.context.Dependent
+      ignoreDefinition: true
+  - com.jackson.mta.foundation.MigrateManagedBeanToNamed
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: com.jackson.mta.foundation.UpgradePrimeFacesDependency
+displayName: Upgrade PrimeFaces to 16.0.0
+description: >-
+  Upgrades org.primefaces:primefaces to the Jakarta-only PrimeFaces 16 baseline. PrimeFaces 16 no longer requires a Jakarta classifier.
+recipeList:
+  - org.openrewrite.maven.UpgradeDependencyVersion:
+      groupId: org.primefaces
+      artifactId: primefaces
+      newVersion: 16.0.0
+      overrideManagedVersion: false

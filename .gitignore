@@ -1,0 +1,6 @@
+**/target/
+.migration/
+.idea/
+.vscode/
+*.iml
+*.log

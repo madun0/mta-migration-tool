@@ -1,0 +1,98 @@
+# Verification Report
+
+## Foundation Automation Increment
+
+Implemented and structurally verified:
+
+- Six declarative OpenRewrite recipes under `META-INF/rewrite/foundation.yml`.
+- Java 21 compiler normalization.
+- Curated Jakarta Maven dependency migration.
+- Curated `javax.*` -> `jakarta.*` Java package migration that excludes Java SE `javax` packages and removed `javax.faces.bean` APIs.
+- Jakarta EE 10 descriptor normalization for `web.xml` and `faces-config.xml`.
+- Assisted JSF managed-bean scope migration with explicit developer verification steps.
+- PrimeFaces dependency upgrade to 16.0.0.
+- Catalog-level `reviewChecklist` and `compileAfterApply` controls.
+- Project-relative paths in generated `MIGRATION-PLAN.md` and `TODO.md`.
+- Cleanup tasks now use `Triggered by` semantics and report zero new findings.
+- Resume workflow preserves review confirmation so post-review execution can reach `MIGRATED`.
+
+## Assessment mapping regression
+
+The supplied 48-finding assessment was replayed against the updated catalog model:
+
+- Primary findings assigned: **48**
+- Unmapped findings: **0**
+- `jakarta-dependencies`: 6
+- `jakarta-imports`: 12
+- `jakarta-descriptors`: 12
+- `faces-managed-beans`: 10
+- `primefaces-baseline`: 1
+- `request-context`: 1
+- `file-upload`: 5
+- `calendar`: 1
+
+All recipe names referenced by the migration catalog resolve to either a Java recipe class or a declarative recipe in the packaged recipe source tree.
+
+## Compilation / smoke verification
+
+The modified Workbench production classes (`MigrationCatalog`, `MigrationPlan`, `MigrationPlanner`, `ReportService`, and `WorkflowService`) were compiled with Java 21 against the dependency/runtime jars from the previously built Workbench distribution.
+
+A Java smoke harness also verified:
+
+- first-match family planning,
+- `compileAfterApply=false` propagation,
+- cleanup tasks carry `Triggered by` and zero findings,
+- cleanup compile gates remain enabled,
+- `file:///...` MTA locations render as project-relative paths in the generated plan.
+
+The environment does not provide Maven, so the complete multi-module `mvn clean install` and execution of the new declarative OpenRewrite recipes must be run on the target workstation before release acceptance.
+
+## 2026-10-02 pre-migrate catalog correction
+
+Before the first real `migrate` run, the migration catalog was corrected so developer guidance matches execution behavior:
+
+- `jakarta-dependencies` now explicitly defers compilation until the Jakarta dependency/import/descriptor/Faces source transformations are complete.
+- `jakarta-imports` now instructs developers to compile during phase validation rather than immediately after the import recipe.
+- `file-upload` now surfaces four assisted-review checks covering UploadedFile/listener signatures, `p:validateFile`, removal of legacy Commons FileUpload configuration, and EAP 8 multipart testing.
+- `calendar` now surfaces four assisted-review checks covering Java date/time types, pattern/locale/timezone behavior, date restrictions/navigation, and Ajax/converter/validator behavior.
+- `CatalogStructureTest` contains regression assertions for these catalog behaviors.
+
+Validation performed in this environment:
+
+- `config/migration-catalog.yaml` parses successfully as YAML.
+- `jakarta-dependencies.compileAfterApply == false`.
+- `jakarta-imports.compileAfterApply == false`.
+- `file-upload` contains four developer verification checks.
+- `calendar` contains four developer verification checks.
+
+A full Maven test run still requires Maven on the target workstation.
+
+## 2026-10-01 test compilation fix
+- Fixed `CatalogStructureTest` to use `MigrationCatalog.FamilySpec` instead of the non-existent `MigrationCatalog.Family` nested type.
+- This addresses the Maven `testCompile` failures reported at lines 226-237 of the user build log.
+- Full Maven execution was not possible in this environment because `mvn` is not installed.
+
+## OpenRewrite repository compatibility
+
+Current OpenRewrite releases may resolve from the Code Genome repository rather than Maven Central. The Workbench now creates a temporary Maven user-settings file that preserves existing user settings and activates `https://artifacts.codegenomeproject.org/maven` for both dependencies and Maven plugins. The temporary file is deleted after each OpenRewrite invocation and the target application's `pom.xml` is not modified for repository setup.
+
+## Non-forking OpenRewrite execution fix
+
+- `RewriteService` now invokes `dryRunNoFork` and `runNoFork` instead of the lifecycle-forking `dryRun` and `run` goals.
+- This prevents Maven from compiling legacy source before Jakarta/PrimeFaces recipes have had a chance to transform it.
+- Added `RewriteServiceTest` to lock the non-forking goal selection.
+
+
+## 2026-10-02 verification semantics and MTA scope correction
+
+- Final verification classifies forbidden-pattern residuals by owning family instead of flattening all matches into one list.
+- Residuals from `AUTOMATIC` families set workflow status to `FAILED` and cause `migrate verify` to return a command failure after writing the report.
+- Residuals from `ASSISTED`/`MANUAL` families set workflow status to `REVIEW_REQUIRED`.
+- Successful family execution and successful build/test verification clear stale `lastError` values.
+- `MIGRATION-REPORT.md` now includes compilation/test PASS status and grouped residual-family sections.
+- `request-context` is now `ASSISTED`, matching the recipe contract that intentionally preserves unsupported/ambiguous RequestContext usages for manual remediation.
+- Legacy `mta.target` is now fallback-only and is never merged into an explicit `mta.targets` list.
+- Legacy `mta.target` is fallback-only; explicit `mta.targets` values are preserved as supplied. `eap82` is treated as a valid MTA target and is not rewritten to `eap8`.
+- Added regression coverage for request-context catalog semantics, MTA target normalization, and grouped final report output.
+
+Container validation: catalog YAML parsed successfully and modified Java sources passed structural brace checks. Full Maven/JUnit validation must run on the target workstation because Maven is not installed in this execution environment.

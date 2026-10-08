@@ -1,0 +1,343 @@
+# Custom MTA rules for JSF 2.x -> Jakarta Faces 4
+# Intended to complement MTA's built-in Jakarta EE / EAP 8 rules.
+# Validate against your installed MTA version before using in production.
+
+- ruleID: faces4-managed-bean-0001
+  category: mandatory
+  effort: 3
+  description: JSF @ManagedBean is removed in Jakarta Faces 4
+  labels:
+    - konveyor.io/source=jsf2
+    - konveyor.io/target=faces4
+  links:
+    - title: Jakarta Faces 4.0 changes
+      url: https://jakarta.ee/specifications/faces/4.0/
+    - title: JBoss EAP 8 migration guide - Faces managed beans
+      url: https://docs.redhat.com/en/documentation/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/application-migration-from-jakarta-ee-8-to-ee-10_default
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: javax.faces.bean.ManagedBean
+  message: |
+    Jakarta Faces 4 removes the native JSF managed-bean facility.
+    Replace @ManagedBean with CDI, normally jakarta.inject.Named, and
+    migrate the bean scope to the appropriate CDI/Faces scope.
+    Review explicit bean names and eager initialization semantics.
+  tag:
+    - JSF
+    - Jakarta Faces 4
+    - CDI
+
+- ruleID: faces4-managed-property-0001
+  category: mandatory
+  effort: 2
+  description: Legacy JSF @ManagedProperty requires CDI-aware migration
+  labels:
+    - konveyor.io/source=jsf2
+    - konveyor.io/target=faces4
+  links:
+    - title: JBoss EAP 8 migration guide - Faces managed beans
+      url: https://docs.redhat.com/en/documentation/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/application-migration-from-jakarta-ee-8-to-ee-10_default
+  when:
+    java.referenced:
+      location: ANNOTATION
+      pattern: javax.faces.bean.ManagedProperty
+  message: |
+    javax.faces.bean.ManagedProperty belongs to the removed JSF managed-bean facility.
+    For Faces 4, review the injection semantics. Red Hat documents migration to
+    jakarta.faces.annotation.ManagedProperty together with jakarta.inject.Inject
+    where an EL-valued managed property is still required. For ordinary bean
+    injection, CDI @Inject is generally preferred.
+  tag:
+    - JSF
+    - Jakarta Faces 4
+    - CDI
+
+- ruleID: faces4-legacy-scopes-0001
+  category: mandatory
+  effort: 2
+  description: Legacy JSF managed-bean scopes are removed
+  labels:
+    - konveyor.io/source=jsf2
+    - konveyor.io/target=faces4
+  when:
+    or:
+      - java.referenced:
+          location: IMPORT
+          pattern: javax.faces.bean.ApplicationScoped
+      - java.referenced:
+          location: IMPORT
+          pattern: javax.faces.bean.RequestScoped
+      - java.referenced:
+          location: IMPORT
+          pattern: javax.faces.bean.SessionScoped
+      - java.referenced:
+          location: IMPORT
+          pattern: javax.faces.bean.ViewScoped
+      - java.referenced:
+          location: IMPORT
+          pattern: javax.faces.bean.NoneScoped
+  message: |
+    This class uses a scope from javax.faces.bean, which was part of the removed
+    Faces managed-bean facility. Migrate to CDI scopes such as
+    jakarta.enterprise.context.ApplicationScoped, RequestScoped, SessionScoped,
+    jakarta.enterprise.context.Dependent, or jakarta.faces.view.ViewScoped as appropriate.
+  tag:
+    - JSF
+    - Jakarta Faces 4
+    - CDI Scope
+
+- ruleID: faces4-native-el-package-0001
+  category: mandatory
+  effort: 2
+  description: Native JSF Expression Language APIs are removed
+  labels:
+    - konveyor.io/source=jsf2
+    - konveyor.io/target=faces4
+  when:
+    java.referenced:
+      location: PACKAGE
+      pattern: javax.faces.el.*
+  message: |
+    Jakarta Faces 4 removes the legacy native Faces EL APIs. Refactor usages of
+    javax.faces.el to the corresponding Jakarta Expression Language APIs under
+    jakarta.el or to current Faces APIs.
+  tag:
+    - JSF
+    - Jakarta Faces 4
+    - Expression Language
+
+- ruleID: faces4-method-binding-0001
+  category: mandatory
+  effort: 3
+  description: javax.faces.el.MethodBinding is removed in Faces 4
+  labels:
+    - konveyor.io/source=jsf2
+    - konveyor.io/target=faces4
+  when:
+    java.referenced:
+      location: TYPE
+      pattern: javax.faces.el.MethodBinding
+  message: |
+    MethodBinding was removed in Jakarta Faces 4. Migrate this code to
+    jakarta.el.MethodExpression or redesign the binding around modern EL/CDI APIs.
+  tag:
+    - JSF
+    - Jakarta Faces 4
+    - Expression Language
+
+- ruleID: faces4-value-binding-0001
+  category: mandatory
+  effort: 3
+  description: javax.faces.el.ValueBinding is removed in Faces 4
+  labels:
+    - konveyor.io/source=jsf2
+    - konveyor.io/target=faces4
+  when:
+    java.referenced:
+      location: TYPE
+      pattern: javax.faces.el.ValueBinding
+  message: |
+    ValueBinding was removed in Jakarta Faces 4. Migrate to jakarta.el.ValueExpression
+    or redesign the code around current EL/CDI APIs.
+  tag:
+    - JSF
+    - Jakarta Faces 4
+    - Expression Language
+
+- ruleID: faces4-resource-resolver-0001
+  category: mandatory
+  effort: 3
+  description: ResourceResolver is removed in Faces 4
+  labels:
+    - konveyor.io/source=jsf2
+    - konveyor.io/target=faces4
+  when:
+    java.referenced:
+      location: TYPE
+      pattern: javax.faces.view.facelets.ResourceResolver
+  message: |
+    ResourceResolver was removed in Jakarta Faces 4. Review this customization
+    and migrate it to ResourceHandler-based resource handling.
+  tag:
+    - JSF
+    - Jakarta Faces 4
+    - Resources
+
+- ruleID: faces4-pre-jsf2-exception-factory-0001
+  category: mandatory
+  effort: 2
+  description: Removed PreJsf2ExceptionHandlerFactory reference detected
+  labels:
+    - konveyor.io/source=jsf2
+    - konveyor.io/target=faces4
+  when:
+    builtin.filecontent:
+      filePattern: "\\.(java|xml)$"
+      pattern: "PreJsf2ExceptionHandlerFactory"
+  message: |
+    PreJsf2ExceptionHandlerFactory is not available in Jakarta Faces 4.
+    Replace legacy exception handling with current jakarta.faces.context
+    exception-handler APIs.
+  tag:
+    - JSF
+    - Jakarta Faces 4
+    - Exception Handling
+
+- ruleID: faces4-current-component-constants-0001
+  category: mandatory
+  effort: 2
+  description: Removed UIComponent CURRENT_* constants may be in use
+  labels:
+    - konveyor.io/source=jsf2
+    - konveyor.io/target=faces4
+  when:
+    builtin.filecontent:
+      filePattern: "\\.java$"
+      pattern: "CURRENT_(COMPOSITE_)?COMPONENT"
+  message: |
+    Jakarta Faces 4 removed the CURRENT_COMPONENT and CURRENT_COMPOSITE_COMPONENT
+    constants. Replace legacy constant access with the current Faces APIs such as
+    UIComponent.getCurrentComponent() or UIComponent.getCurrentCompositeComponent().
+  tag:
+    - JSF
+    - Jakarta Faces 4
+    - UIComponent
+
+- ruleID: faces4-jsp-views-0001
+  category: mandatory
+  effort: 5
+  description: JSP-based Faces views are not supported by Faces 4
+  labels:
+    - konveyor.io/source=jsf2
+    - konveyor.io/target=faces4
+  links:
+    - title: JBoss EAP 8 migration guide - Faces and JSP
+      url: https://docs.redhat.com/en/documentation/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/application-migration-from-jakarta-ee-8-to-ee-10_default
+  when:
+    builtin.file:
+      pattern: ".*\\.jsp$"
+  message: |
+    Jakarta Faces 4 removes JSP as a Faces View Definition Language.
+    Convert JSF JSP pages to Facelets/XHTML.
+  tag:
+    - JSF
+    - Jakarta Faces 4
+    - JSP
+    - Facelets
+
+- ruleID: faces4-jsp-servlet-mapping-0001
+  category: mandatory
+  effort: 3
+  description: FacesServlet appears to be mapped to JSP views
+  labels:
+    - konveyor.io/source=jsf2
+    - konveyor.io/target=faces4
+  when:
+    builtin.filecontent:
+      filePattern: "web\\.xml$"
+      pattern: "\\*\\.jsp"
+  message: |
+    A *.jsp mapping was found in web.xml. Faces 4 no longer supports JSP as a
+    Faces view technology. Review the FacesServlet mappings and migrate views to Facelets/XHTML.
+  tag:
+    - JSF
+    - Jakarta Faces 4
+    - web.xml
+
+- ruleID: faces4-faces-config-managed-bean-0001
+  category: mandatory
+  effort: 3
+  description: faces-config.xml declares legacy managed beans
+  labels:
+    - konveyor.io/source=jsf2
+    - konveyor.io/target=faces4
+  when:
+    builtin.filecontent:
+      filePattern: "faces-config\\.xml$"
+      pattern: "<managed-bean"
+  message: |
+    Faces 4 removes the native managed-bean facility. Remove managed-bean declarations
+    from faces-config.xml and migrate the beans to CDI, normally using @Named and CDI/Faces scopes.
+  tag:
+    - JSF
+    - Jakarta Faces 4
+    - faces-config.xml
+    - CDI
+
+- ruleID: faces4-old-facelets-namespace-0001
+  category: optional
+  effort: 1
+  description: Legacy JSF Facelets namespace is still in use
+  labels:
+    - konveyor.io/source=jsf2
+    - konveyor.io/target=faces4
+  when:
+    builtin.filecontent:
+      filePattern: "\\.(xhtml|tag)$"
+      pattern: "http://xmlns\\.jcp\\.org/jsf/"
+  message: |
+    Faces 4 introduces the jakarta.faces.* URN namespaces. The older xmlns.jcp.org
+    JSF namespaces are stabilized for compatibility, but modernizing them improves
+    alignment with Jakarta Faces 4. Examples include jakarta.faces.html,
+    jakarta.faces.core and jakarta.faces.facelets.
+  tag:
+    - JSF
+    - Jakarta Faces 4
+    - XHTML Namespace
+
+- ruleID: faces4-old-jstl-namespace-0001
+  category: optional
+  effort: 1
+  description: Legacy JSTL namespace is used in a Faces view
+  labels:
+    - konveyor.io/source=jsf2
+    - konveyor.io/target=faces4
+  when:
+    builtin.filecontent:
+      filePattern: "\\.(xhtml|tag)$"
+      pattern: "http://xmlns\\.jcp\\.org/jsp/jstl/"
+  message: |
+    Review JSTL namespace declarations while moving to Jakarta EE 10.
+    Modern Jakarta tag namespaces use jakarta.tags.* URNs.
+  tag:
+    - JSF
+    - Jakarta EE 10
+    - JSTL
+
+- ruleID: faces4-jsf-javascript-api-0001
+  category: potential
+  effort: 2
+  description: Legacy jsf JavaScript API may require migration
+  labels:
+    - konveyor.io/source=jsf2
+    - konveyor.io/target=faces4
+  when:
+    builtin.filecontent:
+      filePattern: "\\.(js|ts|xhtml|properties)$"
+      pattern: "\\bjsf\\.(ajax|getViewState|getClientWindow|push)\\b"
+  message: |
+    Faces 4 renamed JSF-facing JavaScript APIs from jsf to faces. Review this
+    reference and migrate it to the corresponding faces.* API.
+  tag:
+    - JSF
+    - Jakarta Faces 4
+    - JavaScript
+
+- ruleID: faces4-jsf-secret-jndi-0001
+  category: potential
+  effort: 1
+  description: Legacy JSF secret-key JNDI name may require rename
+  labels:
+    - konveyor.io/source=jsf2
+    - konveyor.io/target=faces4
+  when:
+    builtin.filecontent:
+      pattern: "jsf/(ClientSideSecretKey|FlashSecretKey)"
+  message: |
+    Faces 4 renamed JSF-specific secret-key JNDI names from the jsf/ prefix
+    to the faces/ prefix. Review and update this configuration.
+  tag:
+    - JSF
+    - Jakarta Faces 4
+    - JNDI

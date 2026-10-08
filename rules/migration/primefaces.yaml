@@ -1,0 +1,510 @@
+# Custom MTA rules for PrimeFaces 6.2 -> PrimeFaces 16
+# These rules identify high-value breaking changes across the published
+# PrimeFaces migration path. They are assessment rules, not automatic rewrites.
+
+- ruleID: primefaces62-dependency-0001
+  category: mandatory
+  effort: 1
+  description: PrimeFaces 6.2 or older dependency detected
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  links:
+    - title: PrimeFaces migration guides
+      url: https://github.com/primefaces/primefaces/blob/master/docs/migrationguide/migrationguide.md
+  when:
+    java.dependency:
+      name: org.primefaces.primefaces
+      upperbound: "6.2"
+  message: |
+    PrimeFaces 6.2 predates the Jakarta namespace transition and has multiple
+    breaking API changes between 6.2 and PrimeFaces 16. Plan an upgrade through
+    the published PrimeFaces migration guides and retest custom components,
+    JavaScript, themes, and backing-bean integrations.
+  tag:
+    - PrimeFaces
+    - PrimeFaces 6.2
+    - PrimeFaces 16
+
+- ruleID: primefaces-request-context-0001
+  category: mandatory
+  effort: 2
+  description: Legacy PrimeFaces RequestContext API detected
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  links:
+    - title: PrimeFaces 6.2 to 7 migration guide
+      url: https://github.com/primefaces/primefaces/blob/master/docs/migrationguide/7_0.md
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: org.primefaces.context.RequestContext
+  message: |
+    PrimeFaces 7 replaced RequestContext with PrimeFaces.current().
+    Refactor calls such as execute/update/reset/callback operations to the
+    corresponding PrimeFaces.current() APIs. Some Ajax operations now use
+    PrimeFaces.current().ajax().
+  tag:
+    - PrimeFaces
+    - RequestContext
+
+- ruleID: primefaces-push-0001
+  category: mandatory
+  effort: 3
+  description: Removed PrimeFaces Push API detected
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    java.referenced:
+      location: PACKAGE
+      pattern: org.primefaces.push.*
+  message: |
+    PrimeFaces Push was removed in PrimeFaces 7. Replace it with Jakarta Faces
+    websocket support or another supported websocket/push mechanism.
+  tag:
+    - PrimeFaces
+    - Push
+    - WebSocket
+
+- ruleID: primefaces-auto-update-attribute-0001
+  category: potential
+  effort: 1
+  description: PrimeFaces autoUpdate attribute requires review
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    builtin.filecontent:
+      filePattern: "\\.xhtml$"
+      pattern: "autoUpdate\\s*="
+  message: |
+    PrimeFaces 7 removed the autoUpdate attribute from outputPanel, fragment,
+    messages and growl. Review this occurrence and use <p:autoUpdate> where applicable.
+  tag:
+    - PrimeFaces
+    - XHTML
+
+- ruleID: primefaces-overlay-append-to-body-0001
+  category: mandatory
+  effort: 1
+  description: OverlayPanel appendToBody attribute is removed
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    builtin.filecontent:
+      filePattern: "\\.xhtml$"
+      pattern: "appendToBody\\s*="
+  message: |
+    PrimeFaces 7 removed appendToBody from OverlayPanel.
+    Migrate to appendTo="@(body)" where that behavior is required.
+  tag:
+    - PrimeFaces
+    - OverlayPanel
+
+- ruleID: primefaces-rows-per-page-star-0001
+  category: potential
+  effort: 1
+  description: DataTable rowsPerPageTemplate may use removed star syntax
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    builtin.filecontent:
+      filePattern: "\\.xhtml$"
+      pattern: "rowsPerPageTemplate\\s*=.*\\*"
+  message: |
+    PrimeFaces 7 removed the old '*' support in rowsPerPageTemplate.
+    Review the value and migrate to the current ShowAll syntax where needed.
+  tag:
+    - PrimeFaces
+    - DataTable
+
+- ruleID: primefaces-input-mask-review-0001
+  category: potential
+  effort: 1
+  description: PrimeFaces InputMask dynamic mask or validation override requires migration review
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    or:
+      - builtin.filecontent:
+          filePattern: "\\.xhtml$"
+          pattern: "<p:inputMask[^>]*mask\\s*=\\s*[\"']#\\{"
+      - builtin.filecontent:
+          filePattern: "\\.xhtml$"
+          pattern: "<p:inputMask[^>]*validateMask\\s*=\\s*[\"']false[\"']"
+  message: |
+    Review this InputMask usage because its mask is dynamic or server-side mask validation is disabled.
+    Confirm the resolved mask is non-empty and valid under PrimeFaces 16.
+  tag:
+    - PrimeFaces
+    - InputMask
+
+- ruleID: primefaces-uploaded-file-package-0001
+  category: mandatory
+  effort: 2
+  description: Legacy PrimeFaces UploadedFile package detected
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  links:
+    - title: PrimeFaces 7 to 8 migration guide
+      url: https://github.com/primefaces/primefaces/blob/master/docs/migrationguide/8_0.md
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: org.primefaces.model.UploadedFile
+  message: |
+    PrimeFaces 8 moved file-upload models from org.primefaces.model to
+    org.primefaces.model.file. Migrate UploadedFile imports and review
+    getContents()/getInputstream() calls, which became getContent()/getInputStream().
+  tag:
+    - PrimeFaces
+    - FileUpload
+
+- ruleID: primefaces-file-upload-listener-0001
+  category: mandatory
+  effort: 1
+  description: Legacy fileUploadListener attribute detected
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    builtin.filecontent:
+      filePattern: "\\.xhtml$"
+      pattern: "fileUploadListener\\s*="
+  message: |
+    PrimeFaces 8 renamed the FileUpload fileUploadListener attribute to listener.
+    Update the XHTML and verify the backing-bean listener signature.
+  tag:
+    - PrimeFaces
+    - FileUpload
+    - XHTML
+
+- ruleID: primefaces-uploaded-file-get-contents-0001
+  category: potential
+  effort: 1
+  description: UploadedFile getContents() may require rename
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    builtin.filecontent:
+      filePattern: "\\.java$"
+      pattern: "\\.getContents\\s*\\("
+  message: |
+    If this call is on PrimeFaces UploadedFile, migrate getContents() to getContent().
+    Confirm the receiver type before changing it.
+  tag:
+    - PrimeFaces
+    - FileUpload
+
+- ruleID: primefaces-uploaded-file-get-inputstream-0001
+  category: potential
+  effort: 1
+  description: UploadedFile getInputstream() may require rename
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    builtin.filecontent:
+      filePattern: "\\.java$"
+      pattern: "\\.getInputstream\\s*\\("
+  message: |
+    If this call is on PrimeFaces UploadedFile, migrate getInputstream()
+    to getInputStream(). Confirm the receiver type before changing it.
+  tag:
+    - PrimeFaces
+    - FileUpload
+
+- ruleID: primefaces-byte-array-content-0001
+  category: mandatory
+  effort: 2
+  description: Removed PrimeFaces ByteArrayContent API detected
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: org.primefaces.model.ByteArrayContent
+  message: |
+    ByteArrayContent was removed. Migrate to the DefaultStreamedContent
+    builder API and provide a stream supplier.
+  tag:
+    - PrimeFaces
+    - StreamedContent
+
+- ruleID: primefaces-lazy-streamed-content-0001
+  category: mandatory
+  effort: 2
+  description: Removed LazyDefaultStreamedContent API detected
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: org.primefaces.model.LazyDefaultStreamedContent
+  message: |
+    LazyDefaultStreamedContent was removed. Use DefaultStreamedContent with
+    a Supplier-based stream through the builder API.
+  tag:
+    - PrimeFaces
+    - StreamedContent
+
+- ruleID: primefaces-streamed-content-constructor-0001
+  category: potential
+  effort: 2
+  description: Legacy DefaultStreamedContent constructor usage requires review
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    builtin.filecontent:
+      filePattern: "\\.java$"
+      pattern: "new\\s+DefaultStreamedContent\\s*\\("
+  message: |
+    Later PrimeFaces releases deprecated the old DefaultStreamedContent
+    constructors/setters in favor of DefaultStreamedContent.builder().
+    Refactor this construction pattern.
+  tag:
+    - PrimeFaces
+    - StreamedContent
+
+- ruleID: primefaces-dynamic-menu-model-0001
+  category: mandatory
+  effort: 2
+  description: DynamicMenuModel is removed
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: org.primefaces.model.menu.DynamicMenuModel
+  message: |
+    DynamicMenuModel was removed in PrimeFaces 8. Migrate to the current
+    menu model APIs such as BaseMenuModel/DefaultMenuModel as appropriate.
+  tag:
+    - PrimeFaces
+    - Menu
+
+- ruleID: primefaces-menu-add-element-0001
+  category: potential
+  effort: 1
+  description: MenuModel addElement() may require migration
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    builtin.filecontent:
+      filePattern: "\\.java$"
+      pattern: "\\.addElement\\s*\\("
+  message: |
+    If this call targets a PrimeFaces MenuModel, migrate away from the deprecated
+    addElement() API and use the current menu-model element collection/builder APIs.
+  tag:
+    - PrimeFaces
+    - Menu
+
+- ruleID: primefaces-lazy-data-model-0001
+  category: potential
+  effort: 3
+  description: LazyDataModel implementation requires migration review
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    java.referenced:
+      location: IMPORT
+      pattern: org.primefaces.model.LazyDataModel
+  message: |
+    LazyDataModel load signatures and sorting/filtering metadata changed in later
+    PrimeFaces releases. Review every custom LazyDataModel implementation and
+    adapt sort/filter arguments to the target PrimeFaces API.
+  tag:
+    - PrimeFaces
+    - DataTable
+    - LazyDataModel
+
+- ruleID: primefaces-json-package-0001
+  category: mandatory
+  effort: 1
+  description: Legacy PrimeFaces JSON package detected
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    java.referenced:
+      location: PACKAGE
+      pattern: org.primefaces.json.*
+  message: |
+    PrimeFaces moved org.primefaces.json to org.primefaces.shaded.json.
+    Prefer application-owned JSON APIs when possible rather than depending
+    on PrimeFaces internal/shaded JSON classes.
+  tag:
+    - PrimeFaces
+    - JSON
+
+- ruleID: primefaces-legacy-chart-model-0001
+  category: mandatory
+  effort: 4
+  description: Legacy PrimeFaces chart model API detected
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  links:
+    - title: PrimeFaces 12 to 13 migration guide
+      url: https://github.com/primefaces/primefaces/blob/master/docs/migrationguide/13_0_0.md
+  when:
+    java.referenced:
+      location: PACKAGE
+      pattern: org.primefaces.model.chart.*
+  message: |
+    The legacy jqPlot Chart models were removed in PrimeFaces 13 in favor of
+    newer chart support. Redesign these charts against the target PrimeFaces
+    chart API and retest client-side options.
+  tag:
+    - PrimeFaces
+    - Charts
+
+- ruleID: primefaces-chart-component-review-0001
+  category: potential
+  effort: 2
+  description: PrimeFaces chart view requires target-version review
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    builtin.filecontent:
+      filePattern: "\\.xhtml$"
+      pattern: "<p:chart"
+  message: |
+    A PrimeFaces chart component is present. The chart implementation and Java
+    models changed substantially across the PrimeFaces 6.2-to-16 migration path.
+    Correlate this view with its backing chart model and migrate them together.
+  tag:
+    - PrimeFaces
+    - Charts
+    - XHTML
+
+- ruleID: primefaces-repeat-0001
+  category: mandatory
+  effort: 2
+  description: p:repeat was removed
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    builtin.filecontent:
+      filePattern: "\\.xhtml$"
+      pattern: "<p:repeat"
+  message: |
+    PrimeFaces removed p:repeat in PrimeFaces 13. Replace it with ui:repeat
+    and verify state-saving and iteration behavior.
+  tag:
+    - PrimeFaces
+    - XHTML
+
+- ruleID: primefaces-input-switch-0001
+  category: mandatory
+  effort: 2
+  description: p:inputSwitch is removed in the target PrimeFaces line
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  links:
+    - title: PrimeFaces 14 to 15 migration guide
+      url: https://github.com/primefaces/primefaces/blob/master/docs/migrationguide/15_0_0.md
+  when:
+    builtin.filecontent:
+      filePattern: "\\.xhtml$"
+      pattern: "<p:inputSwitch"
+  message: |
+    InputSwitch was removed in PrimeFaces 15. Replace it with an appropriate
+    supported boolean/toggle component in the target PrimeFaces version and
+    retest value binding, Ajax behavior, styling, and accessibility.
+  tag:
+    - PrimeFaces
+    - XHTML
+
+- ruleID: primefaces-commons-fileupload-filter-0001
+  category: mandatory
+  effort: 2
+  description: Legacy PrimeFaces Commons FileUpload filter detected
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    builtin.filecontent:
+      filePattern: "web\\.xml$"
+      pattern: "org\\.primefaces\\.webapp\\.filter\\.FileUploadFilter"
+  message: |
+    PrimeFaces 15 removed Apache Commons FileUpload support. Remove the legacy
+    PrimeFaces FileUploadFilter configuration and migrate to native Servlet/Jakarta upload handling.
+  tag:
+    - PrimeFaces
+    - FileUpload
+    - web.xml
+
+- ruleID: primefaces-old-fileupload-validation-attrs-0001
+  category: potential
+  effort: 2
+  description: Legacy p:fileUpload validation attributes require migration
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    builtin.filecontent:
+      filePattern: "\\.xhtml$"
+      pattern: "(?s)<p:fileUpload\\b[^>]*\\b(sizeLimit|fileLimit|allowTypes)\\s*="
+  message: |
+    This p:fileUpload uses a legacy validation attribute.
+    Move file validation configuration to a nested p:validateFile component
+    and verify file size, file count, and file type validation behavior.
+  tag:
+    - PrimeFaces
+    - FileUpload
+    - Validation
+
+- ruleID: primefaces-filter-options-0001
+  category: mandatory
+  effort: 2
+  description: DataTable filterOptions attribute was removed
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    builtin.filecontent:
+      filePattern: "\\.xhtml$"
+      pattern: "filterOptions\\s*="
+  message: |
+    PrimeFaces removed UIColumn filterOptions in PrimeFaces 13.
+    Replace it with a filter facet/current DataTable filtering approach.
+  tag:
+    - PrimeFaces
+    - DataTable
+    - Filtering
+
+- ruleID: primefaces-ui-data-type-0001
+  category: mandatory
+  effort: 2
+  description: PrimeFaces UIData type was renamed
+  labels:
+    - konveyor.io/source=primefaces6
+    - konveyor.io/target=primefaces16
+  when:
+    java.referenced:
+      location: TYPE
+      pattern: org.primefaces.component.api.UIData
+  message: |
+    PrimeFaces 15 renamed org.primefaces.component.api.UIData to PrimeUIData.
+    Update custom components, subclasses, helpers, and imports that depend on this type.
+  tag:
+    - PrimeFaces
+    - UIData
