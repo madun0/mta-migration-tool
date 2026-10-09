@@ -3,6 +3,7 @@ package com.jackson.migration.mta;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.yaml.snakeyaml.LoaderOptions;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.io.IOException;
@@ -26,7 +27,27 @@ import java.util.Set;
  */
 @ApplicationScoped
 public class MtaOutputParser {
-    private final ObjectMapper yaml = new ObjectMapper(new YAMLFactory()).findAndRegisterModules();
+    /**
+     * Maximum size accepted for one MTA YAML document, measured in Unicode code points.
+     *
+     * <p>SnakeYAML defaults to 3 MiB, which is too small for realistic MTA reports because
+     * {@code output.yaml} embeds source snippets for thousands of analyzer rules. The Workbench
+     * raises that bounded limit to 64 MiB for trusted, locally generated MTA assessment output
+     * while retaining SnakeYAML's document-size protection.</p>
+     */
+    static final int MTA_YAML_CODE_POINT_LIMIT = 64 * 1024 * 1024;
+
+    private final ObjectMapper yaml = createYamlMapper();
+
+    /** Builds a YAML mapper configured for large, locally generated MTA assessment reports. */
+    private static ObjectMapper createYamlMapper() {
+        LoaderOptions loaderOptions = new LoaderOptions();
+        loaderOptions.setCodePointLimit(MTA_YAML_CODE_POINT_LIMIT);
+        YAMLFactory factory = YAMLFactory.builder()
+                .loaderOptions(loaderOptions)
+                .build();
+        return new ObjectMapper(factory).findAndRegisterModules();
+    }
 
     /**
      * Parses an MTA {@code output.yaml} report and recursively extracts deduplicated incidents.
