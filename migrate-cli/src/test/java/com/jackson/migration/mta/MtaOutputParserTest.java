@@ -87,4 +87,27 @@ class MtaOutputParserTest {
         assertEquals("file:///workspace/src/main/resources/META-INF/persistence.xml", findings.get(0).file());
     }
 
+    @Test
+    void parsesMtaReportLargerThanSnakeYamlDefaultLimit() throws Exception {
+        Path report = temp.resolve("large-output.yaml");
+        String padding = "x".repeat(4 * 1024 * 1024);
+        Files.writeString(report, """
+                - name: oversized-mta-output
+                  description: %s
+                  violations:
+                    primefaces-schedule-0001:
+                      category: potential
+                      incidents:
+                        - uri: file:///workspace/src/main/webapp/pages/advanced.xhtml
+                          lineNumber: 33
+                          message: Review schedule
+                """.formatted(padding));
+
+        List<MigrationFinding> findings = new MtaOutputParser().parse(report);
+
+        assertEquals(1, findings.size());
+        assertEquals("primefaces-schedule-0001", findings.get(0).ruleId());
+        assertEquals(33, findings.get(0).line());
+    }
+
 }
