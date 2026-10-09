@@ -49,3 +49,31 @@ This protects manual developer changes. Commit/stash the manual changes and deci
 ## Maven Wrapper vs Maven
 
 For a target application, the Workbench selects Maven according to the JVM host OS. On Windows it prefers `mvnw.cmd` and executes batch wrappers through `cmd.exe`. On Linux/WSL/macOS it prefers the POSIX `mvnw` wrapper and otherwise falls back to system `mvn`; Windows-only `.cmd` wrappers are ignored on non-Windows hosts. This keeps Git Bash and WSL execution distinct and prevents accidental `cmd.exe` launches from Linux environments.
+
+
+## Windows assessment includes `.m2` or unrelated directories
+
+The Workbench treats the selected `--project` directory as a hard application boundary. On Windows, Git Bash path aliases, Maven dependency discovery, parent POM resolution, and filesystem junctions can expose paths outside the application while MTA builds analysis context.
+
+Current Workbench behavior is:
+
+1. normalize Git Bash paths such as `/c/work/app`;
+2. canonicalize the application root with `Path.toRealPath()`;
+3. launch MTA from an isolated temporary working directory instead of the application parent;
+4. retain only normalized findings whose file belongs to the canonical application root; and
+5. discard generated/build/dependency metadata paths such as `.migration/`, `target/`, `.git/`, and `.m2/repository/`.
+
+The assessment log prints the effective root:
+
+```text
+MTA application root: C:\work\showcase
+MTA execution directory: C:\Users\...\Temp\mta-workbench-...
+```
+
+If the first path is broader than the application itself, rerun the command with an explicit project root, for example:
+
+```bash
+migrate assess --project /c/work/showcase
+```
+
+MTA may still read Maven repository artifacts internally for dependency/type information. Those external paths are analyzer context and are not allowed into Workbench `findings.json`.

@@ -26,7 +26,7 @@ migrate (Quarkus + Picocli)
 1. Git Bash is the developer shell, not the orchestration engine.
 2. Java `ProcessBuilder` launches MTA, Git and Maven; source logic never depends on `grep`, `sed`, or `awk`.
 3. `java.nio.file.Path` is used internally. `/c/...` Git Bash paths are normalized at the CLI boundary.
-4. MTA performs assessment and re-assessment.
+4. MTA performs assessment and re-assessment. Before MTA starts, the application root is canonicalized with `toRealPath()`. MTA runs from an isolated temporary working directory rather than the application or its parent directory, and normalized findings are accepted only when their source path is inside the canonical application root.
 5. OpenRewrite is invoked through the Maven plugin in version 1; the Workbench does not embed the Rewrite runtime.
 6. The catalog contains sequencing and recipe knowledge. CLI command classes remain thin.
 7. `.migration/state.json` is the only workflow-state file.

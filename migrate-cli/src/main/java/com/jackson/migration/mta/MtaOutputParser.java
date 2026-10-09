@@ -7,6 +7,7 @@ import org.yaml.snakeyaml.LoaderOptions;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;
+import java.util.regex.Pattern;
 import java.util.Set;
 
 /**
@@ -133,13 +135,105 @@ public class MtaOutputParser {
                 .toList();
     }
 
-    /** Returns true when a finding path belongs to generated Workbench/build metadata. */
+    /**
+     * Keeps only findings that belong to the selected application root.
+     *
+     * <p>MTA may inspect Maven dependencies, parent models, or other filesystem locations while
+     * building type information. Those locations are useful to the analyzer but must never be
+     * promoted into application migration findings. File-less/global findings are retained because
+     * they cannot be scoped to a source path.</p>
+     *
+     * @param findings normalized MTA findings
+     * @param projectRoot canonical application project root
+     * @return findings whose source path is inside {@code projectRoot}, plus file-less findings
+     */
+    public List<MigrationFinding> filterToProjectRoot(List<MigrationFinding> findings, Path projectRoot) {
+        if (findings == null || findings.isEmpty()) return List.of();
+        String root = normalizePathKey(projectRoot.toAbsolutePath().normalize().toString());
+        return findings.stream()
+                .filter(finding -> finding.file() == null
+                        || finding.file().isBlank()
+                        || isWithinProjectPath(root, finding.file()))
+                .toList();
+    }
+
+    /**
+     * Tests whether an MTA file reference is inside an application root.
+     *
+     * <p>The comparison understands native Windows paths, {@code file:///C:/...} URIs, Git Bash
+     * {@code /c/...} paths, and POSIX paths. Windows drive paths are compared case-insensitively
+     * and path-segment boundaries prevent a project such as {@code C:/work/app} from accepting
+     * {@code C:/work/app-other}.</p>
+     */
+    static boolean isWithinProjectPath(String projectRoot, String findingFile) {
+        String root = normalizePathKey(projectRoot);
+        String file = normalizePathKey(findingFile);
+        if (root.isBlank() || file.isBlank()) return false;
+
+        if (!isAbsolutePathKey(file)) {
+            file = normalizePathKey(root + "/" + file);
+        }
+
+        return file.equals(root) || file.startsWith(root + "/");
+    }
+
+    /** Converts URI/native/Git-Bash path spellings into a stable comparison key. */
+    static String normalizePathKey(String raw) {
+        if (raw == null || raw.isBlank()) return "";
+        String value = raw.trim();
+
+        if (value.regionMatches(true, 0, "file:", 0, 5)) {
+            try {
+                URI uri = URI.create(value);
+                if ("file".equalsIgnoreCase(uri.getScheme())) {
+                    String authority = uri.getAuthority();
+                    String path = uri.getPath();
+                    value = authority == null || authority.isBlank()
+                            ? path
+                            : "//" + authority + path;
+                }
+            } catch (IllegalArgumentException ignored) {
+                // Fall through to conservative string normalization.
+            }
+        }
+
+        value = value.replace('\\', '/');
+        value = value.replaceAll("/{2,}", "/");
+
+        // file:///C:/... becomes /C:/... after URI decoding.
+        if (value.matches("^/[A-Za-z]:/.*")) {
+            value = value.substring(1);
+        }
+
+        // Git Bash /c/work/app -> C:/work/app.
+        if (value.matches("^/[A-Za-z]/.*")) {
+            value = Character.toUpperCase(value.charAt(1)) + ":" + value.substring(2);
+        }
+
+        while (value.length() > 1 && value.endsWith("/")) {
+            value = value.substring(0, value.length() - 1);
+        }
+
+        if (WINDOWS_DRIVE.matcher(value).matches()) {
+            value = value.toLowerCase(Locale.ROOT);
+        }
+        return value;
+    }
+
+    private static final Pattern WINDOWS_DRIVE = Pattern.compile("^[A-Za-z]:/.*");
+
+    private static boolean isAbsolutePathKey(String value) {
+        return value.startsWith("/") || WINDOWS_DRIVE.matcher(value).matches();
+    }
+
+    /** Returns true when a finding path belongs to generated Workbench/build/dependency metadata. */
     private boolean isGeneratedPath(String file) {
         if (file == null || file.isBlank()) return false;
         String normalized = file.replace('\\', '/').toLowerCase(Locale.ROOT);
         return normalized.contains("/.migration/")
                 || normalized.contains("/target/")
-                || normalized.contains("/.git/");
+                || normalized.contains("/.git/")
+                || normalized.contains("/.m2/repository/");
     }
 
     /** Adds a finding only when its rule/file/line/message identity has not been seen. */

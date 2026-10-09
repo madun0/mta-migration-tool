@@ -80,7 +80,7 @@ public class WorkflowService {
     public MigrationPlan plan(Path project) throws Exception {
         MigrationConfig config = configs.load(project);
         MigrationCatalog catalog = catalogs.load();
-        List<MigrationFinding> findings = mta.loadFindings(project.resolve(".migration/assessment"));
+        List<MigrationFinding> findings = mta.loadFindings(project, project.resolve(".migration/assessment"));
         MigrationPlan plan = planner.build(catalog, config.profile, findings);
         planner.save(plan, project.resolve(".migration/plan.json"));
         reports.writePlan(project, plan);
@@ -246,7 +246,7 @@ public class WorkflowService {
             }
         }
 
-        List<MigrationFinding> before = mta.loadFindings(project.resolve(".migration/assessment"));
+        List<MigrationFinding> before = mta.loadFindings(project, project.resolve(".migration/assessment"));
         List<MigrationFinding> after = mta.assess(project, project.resolve(".migration/verification"), config);
 
         FindingResidualClassifier.Result findingResiduals = FindingResidualClassifier.classify(catalog, after);

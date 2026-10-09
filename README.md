@@ -1,4 +1,3 @@
-=======
 # Jackson Migration Workbench
 
 A Windows 11 / Git Bash-first CLI that orchestrates **Red Hat Migration Toolkit for Applications (MTA)**
