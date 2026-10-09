@@ -16,7 +16,7 @@ import picocli.CommandLine.Command;
         description = "Guided MTA + OpenRewrite migration workbench for Windows 11 / Git Bash.",
         subcommands = {
                 InitCommand.class, DoctorCommand.class, AssessCommand.class, PlanCommand.class,
-                MigrateCommand.class, StatusCommand.class, ResumeCommand.class,
+                MigrateCommand.class, StatusCommand.class, ResumeCommand.class, RestartCommand.class,
                 RollbackCommand.class, VerifyCommand.class, ReportCommand.class
         })
 public class RootCommand implements Runnable {

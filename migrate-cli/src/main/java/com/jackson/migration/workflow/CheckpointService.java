@@ -87,6 +87,24 @@ public class CheckpointService {
                 Checkpoint.class);
     }
 
+
+    /**
+     * Returns whether this project contains any persisted Workbench checkpoints.
+     *
+     * @param project application project root
+     * @return {@code true} when at least one sequential checkpoint directory exists
+     * @throws IOException if the checkpoint directory cannot be inspected
+     */
+    public boolean hasAny(Path project) throws IOException {
+        Path dir = project.resolve(".migration/checkpoints");
+        if (!Files.exists(dir)) return false;
+        try (var entries = Files.list(dir)) {
+            return entries.filter(Files::isDirectory)
+                    .map(p -> p.getFileName().toString())
+                    .anyMatch(s -> s.matches("cp-\\d+"));
+        }
+    }
+
     /**
      * Finds the lexically latest sequential workbench checkpoint.
      *

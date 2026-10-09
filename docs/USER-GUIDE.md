@@ -92,10 +92,15 @@ migrate status
 migrate resume
 migrate rollback
 migrate rollback --checkpoint cp-004
+migrate restart
 ```
 
 Rollback is intentionally conservative. It refuses if Git HEAD changed or if the worktree differs from the
-recorded Workbench state.
+recorded Workbench state. If Git HEAD changed before any checkpointed migration work, the Workbench refreshes
+the baseline automatically when the application tree is clean. If checkpoints already exist and you intentionally
+want a new migration run from the current commit, use `migrate restart`; it preserves `migration.yaml` and clears
+old run state, checkpoints, assessment/verification output, plan, TODO, and generated reports. Re-run `assess`,
+`plan`, and `migrate` afterwards.
 
 ## 8. Verify
 

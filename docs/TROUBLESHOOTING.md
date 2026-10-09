@@ -77,3 +77,20 @@ migrate assess --project /c/work/showcase
 ```
 
 MTA may still read Maven repository artifacts internally for dependency/type information. Those external paths are analyzer context and are not allowed into Workbench `findings.json`.
+
+## Git HEAD changed since migration started
+
+The Workbench binds checkpoint/rollback state to the Git commit that was current when migration began.
+If HEAD changes before any checkpoint exists and the application tree is clean, the baseline is refreshed automatically.
+Once a checkpoint exists, rebinding would make rollback unsafe and is refused.
+
+For a deliberate fresh run from the current commit:
+
+```bash
+migrate restart --project .
+migrate assess --project .
+migrate plan --project .
+migrate migrate --project .
+```
+
+`restart` preserves `migration.yaml` but removes prior Workbench run state, checkpoints, assessment/verification output, plan and generated reports. It requires a clean application working tree.

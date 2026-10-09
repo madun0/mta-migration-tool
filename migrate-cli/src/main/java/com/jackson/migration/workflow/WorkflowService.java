@@ -104,15 +104,8 @@ public class WorkflowService {
         MigrationPlan plan = loadOrPlan(project);
         refreshRuntimePolicies(plan, catalog);
         MigrationState state = states.load(project).orElseGet(MigrationState::new);
+        ensureGitBaseline(project, plan, state);
         boolean reviewConfirmed = "REVIEW_CONFIRMED".equals(state.status);
-
-        if (state.baselineGitHead == null) {
-            if (!git.isClean(project)) throw new IllegalStateException("Working tree must be clean before the first migration. Commit or stash changes first.");
-            state.baselineGitHead = git.head(project);
-            state.profile = plan.profile;
-            state.status = "IN_PROGRESS";
-            states.save(project, state);
-        }
 
         List<MigrationPlan.PhasePlan> phases = select(plan, phaseFilter, familyFilter, catalog);
         for (MigrationPlan.PhasePlan phase : phases) {
@@ -206,6 +199,44 @@ public class WorkflowService {
     }
 
     /**
+     * Clears persisted run-specific migration artifacts so the current Git commit can be assessed
+     * and migrated as a new run. The user-owned {@code migration.yaml} configuration is preserved.
+     * A clean application working tree is required because old rollback checkpoints are discarded.
+     *
+     * @param project application project root
+     * @throws Exception if the working tree is dirty or run artifacts cannot be removed
+     */
+    public void restart(Path project) throws Exception {
+        if (!git.isClean(project)) {
+            throw new IllegalStateException(
+                    "Working tree must be clean before restarting migration. Commit or stash application changes first.");
+        }
+
+        Path migration = project.resolve(".migration");
+        deleteTree(migration.resolve("checkpoints"));
+        deleteTree(migration.resolve("assessment"));
+        deleteTree(migration.resolve("verification"));
+        Files.deleteIfExists(migration.resolve("state.json"));
+        Files.deleteIfExists(migration.resolve("plan.json"));
+        Files.deleteIfExists(migration.resolve("MIGRATION-PLAN.md"));
+        Files.deleteIfExists(migration.resolve("MIGRATION-REPORT.md"));
+        Files.deleteIfExists(migration.resolve("TODO.md"));
+
+        System.out.println("Migration run state cleared for current Git HEAD " + abbreviate(git.head(project)) + ".");
+        System.out.println("migration.yaml was preserved. Run: migrate assess --project . && migrate plan --project . && migrate migrate --project .");
+    }
+
+    /** Deletes a Workbench-owned directory tree when it exists. */
+    private void deleteTree(Path root) throws IOException {
+        if (!Files.exists(root)) return;
+        try (var paths = Files.walk(root)) {
+            for (Path path : paths.sorted(java.util.Comparator.reverseOrder()).toList()) {
+                Files.deleteIfExists(path);
+            }
+        }
+    }
+
+    /**
      * Performs final compilation/tests, residual forbidden-pattern scanning, a second MTA analysis,
      * and final report generation.
      *
@@ -280,6 +311,67 @@ public class WorkflowService {
         if ("FAILED".equals(state.status)) {
             throw new IllegalStateException(state.lastError);
         }
+    }
+
+    /**
+     * Establishes or validates the Git baseline used by checkpoint/rollback safety. A stale baseline
+     * may be refreshed only when no Workbench checkpoint exists and the application working tree
+     * is clean; once a checkpoint exists, changing HEAD would invalidate rollback semantics.
+     */
+    private void ensureGitBaseline(Path project, MigrationPlan plan, MigrationState state) throws Exception {
+        String currentHead = git.head(project);
+        boolean clean = git.isClean(project);
+
+        if (state.baselineGitHead == null || state.baselineGitHead.isBlank()) {
+            if (!clean) {
+                throw new IllegalStateException(
+                        "Working tree must be clean before the first migration. Commit or stash changes first.");
+            }
+            state.baselineGitHead = currentHead;
+            state.profile = plan.profile;
+            state.status = "IN_PROGRESS";
+            states.save(project, state);
+            return;
+        }
+
+        if (currentHead.equals(state.baselineGitHead)) return;
+
+        boolean hasCheckpoints = checkpoints.hasAny(project);
+        if (canRefreshBaseline(state, hasCheckpoints, clean)) {
+            String previousHead = state.baselineGitHead;
+            state.baselineGitHead = currentHead;
+            state.profile = plan.profile;
+            state.status = "IN_PROGRESS";
+            state.currentPhase = null;
+            state.currentFamily = null;
+            state.lastError = null;
+            states.save(project, state);
+            System.out.println("Git HEAD changed before any checkpointed migration work; refreshed baseline from "
+                    + abbreviate(previousHead) + " to " + abbreviate(currentHead) + ".");
+            return;
+        }
+
+        throw new IllegalStateException(
+                "Git HEAD changed since this migration run started (baseline "
+                        + abbreviate(state.baselineGitHead) + ", current " + abbreviate(currentHead) + "). "
+                        + "Existing checkpointed state cannot be rebound safely. "
+                        + "To start a fresh migration from the current commit, run 'migrate restart --project .'. "
+                        + "To resume or rollback this run, restore the repository to the baseline commit first.");
+    }
+
+    /**
+     * Returns whether a stale baseline can be rebound without invalidating a rollback checkpoint.
+     */
+    static boolean canRefreshBaseline(MigrationState state, boolean hasCheckpoints, boolean cleanWorkingTree) {
+        return cleanWorkingTree
+                && !hasCheckpoints
+                && (state.lastCheckpoint == null || state.lastCheckpoint.isBlank());
+    }
+
+    /** Shortens a Git object name for console diagnostics without changing stored state. */
+    private static String abbreviate(String commit) {
+        if (commit == null) return "<none>";
+        return commit.length() <= 12 ? commit : commit.substring(0, 12);
     }
 
     /** Merges residual details without discarding forbidden-pattern or MTA evidence already collected. */
