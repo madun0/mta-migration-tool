@@ -94,3 +94,18 @@ migrate migrate --project .
 ```
 
 `restart` preserves `migration.yaml` but removes prior Workbench run state, checkpoints, assessment/verification output, plan and generated reports. It requires a clean application working tree.
+
+## MTA reads `.m2` or unrelated directories
+
+Use the default strict source boundary:
+
+```yaml
+mta:
+  strictProjectScope: true
+  mode: source-only
+```
+
+`full` MTA mode analyzes source and dependencies and can legitimately inspect the Maven local repository,
+parent POMs, or reactor modules. With `strictProjectScope: true`, the Workbench forces `source-only` even
+when an older configuration still requests `full`. Set `strictProjectScope: false` only when dependency-aware
+analysis is intentional.

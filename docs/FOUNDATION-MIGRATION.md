@@ -65,13 +65,19 @@ The recipe preserves explicit managed-bean names. JSF `eager=true`, `@ManagedPro
 The descriptor recipe normalizes common deployment descriptors to the Jakarta EE 10 baseline used by this Workbench: Servlet 6.0 for `web.xml` and Faces 4.0 for `faces-config.xml`. Vendor-specific descriptor semantics remain outside automatic transformation.
 
 
-## Required Jakarta CDI and annotation APIs
+## Required Jakarta Faces, CDI, and annotation APIs
 
 The `com.jackson.mta.foundation.MigrateJakartaDependencies` recipe is both substitutive and additive.
-In addition to replacing supported legacy `javax.*` Maven coordinates, it guarantees these APIs are
-present for source transformations that introduce CDI and Jakarta annotations:
+In addition to replacing supported legacy `javax.*` Maven coordinates, it guarantees the compile-time
+APIs needed by the migrated source and by PrimeFaces 16:
 
 ```xml
+<dependency>
+    <groupId>jakarta.faces</groupId>
+    <artifactId>jakarta.faces-api</artifactId>
+    <version>4.0.1</version>
+    <scope>provided</scope>
+</dependency>
 <dependency>
     <groupId>jakarta.annotation</groupId>
     <artifactId>jakarta.annotation-api</artifactId>
@@ -84,6 +90,13 @@ present for source transformations that introduce CDI and Jakarta annotations:
     <scope>provided</scope>
 </dependency>
 ```
+
+`EnsureJakartaFacesCompileApi` is also included directly in `UpgradePrimeFacesDependency`. This is
+intentional: the `primefaces-only` profile does not run the FOUNDATION phase, and a legacy application
+may have relied on EAP to provide JSF without declaring `javax.faces-api`. The guard ensures classes
+such as `jakarta.faces.model.DataModel` are resolvable before the Jakarta-only PrimeFaces 16 artifact
+is introduced. Existing Jakarta Faces declarations are normalized to `provided` scope before the
+fallback add runs, avoiding duplicate dependency declarations caused solely by scope differences.
 
 The CDI API carries Jakarta Inject as a compile dependency, so `jakarta.inject.Named` and
 `jakarta.inject.Inject` are available to the migrated source while the CDI implementation remains

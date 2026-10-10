@@ -3,7 +3,13 @@ package com.jackson.mta.foundation;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.xml.tree.Xml;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.maven.Assertions.pomXml;
 import static org.openrewrite.xml.Assertions.xml;
@@ -47,11 +53,6 @@ class FoundationRecipeTransformationTest implements RewriteTest {
                             <version>3.0.0</version>
                         </dependency>
                         <dependency>
-                            <groupId>jakarta.faces</groupId>
-                            <artifactId>jakarta.faces-api</artifactId>
-                            <version>4.0.1</version>
-                        </dependency>
-                        <dependency>
                             <groupId>jakarta.ejb</groupId>
                             <artifactId>jakarta.ejb-api</artifactId>
                             <version>4.0.1</version>
@@ -63,9 +64,16 @@ class FoundationRecipeTransformationTest implements RewriteTest {
                             <version>4.1.0</version>
                             <scope>provided</scope>
                         </dependency>
+                        <dependency>
+                            <groupId>jakarta.faces</groupId>
+                            <artifactId>jakarta.faces-api</artifactId>
+                            <version>4.0.1</version>
+                            <scope>provided</scope>
+                        </dependency>
                     </dependencies>
                 </project>
-                """
+                """,
+                spec -> spec.afterRecipe(FoundationRecipeTransformationTest::assertJakartaFacesDependency)
             )
         );
     }
@@ -108,12 +116,160 @@ class FoundationRecipeTransformationTest implements RewriteTest {
                             <version>4.1.0</version>
                             <scope>provided</scope>
                         </dependency>
+                        <dependency>
+                            <groupId>jakarta.faces</groupId>
+                            <artifactId>jakarta.faces-api</artifactId>
+                            <version>4.0.1</version>
+                            <scope>provided</scope>
+                        </dependency>
                     </dependencies>
                 </project>
-                """
+                """,
+                spec -> spec.afterRecipe(FoundationRecipeTransformationTest::assertJakartaFacesDependency)
             )
         );
     }
+
+    @Test
+    void addsProvidedJakartaFacesWhenPrimeFacesAppReliedOnContainerProvidedJsf() {
+        rewriteRun(
+            spec -> spec.recipeFromResources("com.jackson.mta.foundation.MigrateJakartaDependencies"),
+            pomXml(
+                """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>example</groupId>
+                    <artifactId>legacy-primefaces-app</artifactId>
+                    <version>1.0</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.primefaces</groupId>
+                            <artifactId>primefaces</artifactId>
+                            <version>6.2</version>
+                        </dependency>
+                    </dependencies>
+                </project>
+                """,
+                """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>example</groupId>
+                    <artifactId>legacy-primefaces-app</artifactId>
+                    <version>1.0</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>jakarta.annotation</groupId>
+                            <artifactId>jakarta.annotation-api</artifactId>
+                            <version>3.0.0</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.primefaces</groupId>
+                            <artifactId>primefaces</artifactId>
+                            <version>6.2</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>jakarta.ejb</groupId>
+                            <artifactId>jakarta.ejb-api</artifactId>
+                            <version>4.0.1</version>
+                            <scope>provided</scope>
+                        </dependency>
+                        <dependency>
+                            <groupId>jakarta.enterprise</groupId>
+                            <artifactId>jakarta.enterprise.cdi-api</artifactId>
+                            <version>4.1.0</version>
+                            <scope>provided</scope>
+                        </dependency>
+                        <dependency>
+                            <groupId>jakarta.faces</groupId>
+                            <artifactId>jakarta.faces-api</artifactId>
+                            <version>4.0.1</version>
+                            <scope>provided</scope>
+                        </dependency>
+                    </dependencies>
+                </project>
+                """,
+                spec -> spec.afterRecipe(FoundationRecipeTransformationTest::assertJakartaFacesDependency)
+            )
+        );
+    }
+
+
+    @Test
+    void ensuresJakartaFacesCompileApiWithProvidedScope() {
+        rewriteRun(
+            spec -> spec.recipeFromResources("com.jackson.mta.foundation.EnsureJakartaFacesCompileApi"),
+            pomXml(
+                """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>example</groupId>
+                    <artifactId>container-provided-jsf-app</artifactId>
+                    <version>1.0</version>
+                </project>
+                """,
+                """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>example</groupId>
+                    <artifactId>container-provided-jsf-app</artifactId>
+                    <version>1.0</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>jakarta.faces</groupId>
+                            <artifactId>jakarta.faces-api</artifactId>
+                            <version>4.0.1</version>
+                            <scope>provided</scope>
+                        </dependency>
+                    </dependencies>
+                </project>
+                """,
+                spec -> spec.afterRecipe(FoundationRecipeTransformationTest::assertJakartaFacesDependency)
+            )
+        );
+    }
+
+
+    @Test
+    void normalizesExistingJakartaFacesDependencyToProvidedWithoutDuplicate() {
+        rewriteRun(
+            spec -> spec.recipeFromResources("com.jackson.mta.foundation.EnsureJakartaFacesCompileApi"),
+            pomXml(
+                """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>example</groupId>
+                    <artifactId>existing-faces-app</artifactId>
+                    <version>1.0</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>jakarta.faces</groupId>
+                            <artifactId>jakarta.faces-api</artifactId>
+                            <version>4.0.1</version>
+                        </dependency>
+                    </dependencies>
+                </project>
+                """,
+                """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>example</groupId>
+                    <artifactId>existing-faces-app</artifactId>
+                    <version>1.0</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>jakarta.faces</groupId>
+                            <artifactId>jakarta.faces-api</artifactId>
+                            <version>4.0.1</version>
+                            <scope>provided</scope>
+                        </dependency>
+                    </dependencies>
+                </project>
+                """,
+                spec -> spec.afterRecipe(FoundationRecipeTransformationTest::assertJakartaFacesDependency)
+            )
+        );
+    }
+
 
     @Test
     void migratesSupportedJavaxImportButLeavesJavaSeNamespaceAlone() {
@@ -213,9 +369,16 @@ class FoundationRecipeTransformationTest implements RewriteTest {
                             <artifactId>primefaces</artifactId>
                             <version>16.0.0</version>
                         </dependency>
+                        <dependency>
+                            <groupId>jakarta.faces</groupId>
+                            <artifactId>jakarta.faces-api</artifactId>
+                            <version>4.0.1</version>
+                            <scope>provided</scope>
+                        </dependency>
                     </dependencies>
                 </project>
-                """
+                """,
+                spec -> spec.afterRecipe(FoundationRecipeTransformationTest::assertJakartaFacesDependency)
             )
         );
     }
@@ -264,12 +427,49 @@ class FoundationRecipeTransformationTest implements RewriteTest {
                             <version>4.1.0</version>
                             <scope>provided</scope>
                         </dependency>
+                        <dependency>
+                            <groupId>jakarta.faces</groupId>
+                            <artifactId>jakarta.faces-api</artifactId>
+                            <version>4.0.1</version>
+                            <scope>provided</scope>
+                        </dependency>
                     </dependencies>
                 </project>
-                """
+                """,
+                spec -> spec.afterRecipe(FoundationRecipeTransformationTest::assertJakartaFacesDependency)
             )
         );
     }
 
+
+    /**
+     * Verifies the semantic Maven contract required by PrimeFaces 16 without
+     * depending on where OpenRewrite chooses to insert the dependency.
+     *
+     * @param pom rewritten Maven POM
+     */
+    private static void assertJakartaFacesDependency(Xml.Document pom) {
+        String xml = pom.printAll();
+        Pattern facesDependency = Pattern.compile(
+                "<dependency>\\s*" +
+                "<groupId>jakarta\\.faces</groupId>\\s*" +
+                "<artifactId>jakarta\\.faces-api</artifactId>" +
+                ".*?</dependency>",
+                Pattern.DOTALL);
+
+        Matcher matcher = facesDependency.matcher(xml);
+        int matches = 0;
+        String dependency = null;
+        while (matcher.find()) {
+            matches++;
+            dependency = matcher.group();
+        }
+
+        assertEquals(1, matches, "Expected exactly one jakarta.faces:jakarta.faces-api dependency");
+        assertTrue(dependency != null && dependency.contains("<version>4.0.1</version>"),
+                "Jakarta Faces API must be version 4.0.1");
+        assertTrue(dependency != null && dependency.contains("<scope>provided</scope>"),
+                "Jakarta Faces API must use provided scope for the EAP runtime");
+    }
 
 }

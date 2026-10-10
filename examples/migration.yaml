@@ -11,7 +11,9 @@ mta:
     - eap8
     - faces4
     - primefaces16
-  mode: full
+  # Strict project scope keeps MTA inside this application's source tree.
+  strictProjectScope: true
+  mode: source-only
 validation:
   compileAfterFamily: true
   runTestsOnVerify: true

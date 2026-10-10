@@ -25,7 +25,8 @@ projectName: customer-portal
 profile: standard
 mta:
   target: eap8
-  mode: full
+  strictProjectScope: true
+  mode: source-only
 validation:
   compileAfterFamily: true
   runTestsOnVerify: true

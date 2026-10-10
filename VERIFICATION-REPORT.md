@@ -96,3 +96,18 @@ Current OpenRewrite releases may resolve from the Code Genome repository rather 
 - Added regression coverage for request-context catalog semantics, MTA target normalization, and grouped final report output.
 
 Container validation: catalog YAML parsed successfully and modified Java sources passed structural brace checks. Full Maven/JUnit validation must run on the target workstation because Maven is not installed in this execution environment.
+
+## 2026-10-10 v17 Jakarta Faces regression-test stabilization
+
+The user-provided Maven run executed 107 recipe tests and reported four failures, all in `FoundationRecipeTransformationTest`. The diffs showed the expected Jakarta Faces dependency was present with version `4.0.1` and `provided` scope; only dependency ordering differed.
+
+v17 therefore leaves production recipes unchanged from v16 and updates the affected test expectations to the observed OpenRewrite ordering. It also adds semantic `afterRecipe` assertions that require exactly one `jakarta.faces:jakarta.faces-api` dependency with version `4.0.1` and `provided` scope.
+
+Structural verification performed here:
+
+- v16 and v17 `src/main` recipe trees are identical.
+- `VERSION` is `17`.
+- `PATCH-NOTES-v17.md` documents the test-only change.
+- Java source delimiters/braces and package layout were inspected after modification.
+
+Maven is not installed in this execution environment, so final release acceptance requires running the focused foundation test and full reactor build on the target workstation.

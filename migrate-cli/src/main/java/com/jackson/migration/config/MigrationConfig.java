@@ -41,8 +41,25 @@ public class MigrationConfig {
         /** Target technologies used to select relevant MTA rules. */
         public List<String> targets = new ArrayList<>();
 
-        /** MTA analysis mode passed to {@code mta-cli analyze}. */
-        public String mode = "full";
+        /**
+         * MTA analysis mode requested for {@code mta-cli analyze}.
+         *
+         * <p>The Workbench defaults to {@code source-only} so assessment remains scoped to the
+         * selected application tree. {@code full} enables dependency analysis and can cause MTA's
+         * Java/Maven provider to inspect external dependency locations such as the local Maven
+         * repository or parent/reactor modules.</p>
+         */
+        public String mode = "source-only";
+
+        /**
+         * Enforces an application-source-only assessment boundary.
+         *
+         * <p>When {@code true} (the default), the Workbench forces MTA to use
+         * {@code --mode source-only} even if an older migration configuration requests
+         * {@code full}. Set this to {@code false} only when dependency-aware MTA analysis is
+         * intentionally required and external dependency filesystem access is acceptable.</p>
+         */
+        public boolean strictProjectScope = true;
     }
 
     /**

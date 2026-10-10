@@ -83,15 +83,23 @@ public class MtaService {
         command.add("--rules");
         command.add(customRuleset.toString());
 
-        if (config.mta.mode != null && !config.mta.mode.isBlank()) {
-            command.add("--mode");
-            command.add(config.mta.mode);
-        }
+        String analysisMode = effectiveAnalysisMode(config.mta.mode, config.mta.strictProjectScope);
+        command.add("--mode");
+        command.add(analysisMode);
 
         Path executionDirectory = Files.createTempDirectory("mta-workbench-").toRealPath();
         System.out.println("MTA application root: " + projectRoot);
         System.out.println("MTA execution directory: " + executionDirectory);
         System.out.println("MTA scope: sources=" + sources + ", targets=" + targets);
+        System.out.println("MTA analysis mode: " + analysisMode
+                + " (strictProjectScope=" + config.mta.strictProjectScope + ")");
+        if (config.mta.strictProjectScope
+                && config.mta.mode != null
+                && !config.mta.mode.isBlank()
+                && !"source-only".equalsIgnoreCase(config.mta.mode.trim())) {
+            System.out.println("MTA strict project scope overrode requested mode '"
+                    + config.mta.mode.trim() + "' with 'source-only'.");
+        }
         System.out.println("MTA custom ruleset: " + customRuleset);
 
         CommandResult result;
@@ -115,6 +123,32 @@ public class MtaService {
         }
         json.writerWithDefaultPrettyPrinter().writeValue(effectiveOutput.resolve("findings.json").toFile(), findings);
         return findings;
+    }
+
+    /**
+     * Resolves the effective MTA analysis mode while honoring the Workbench source-boundary policy.
+     *
+     * <p>{@code full} instructs MTA's Java provider to analyze application source and dependencies.
+     * That is useful for dependency-aware assessments, but it can legitimately cause Maven and the
+     * Java provider to inspect files outside the selected project tree. Strict project scope therefore
+     * forces {@code source-only}. Dependency-aware analysis remains available as an explicit opt-in
+     * by setting {@code strictProjectScope: false} together with {@code mode: full}.</p>
+     *
+     * @param requestedMode configured MTA mode
+     * @param strictProjectScope whether external dependency traversal is disallowed
+     * @return {@code source-only} or {@code full}
+     */
+    static String effectiveAnalysisMode(String requestedMode, boolean strictProjectScope) {
+        if (strictProjectScope) return "source-only";
+
+        String mode = requestedMode == null ? "" : requestedMode.trim().toLowerCase();
+        if (mode.isBlank()) return "source-only";
+        if (!"source-only".equals(mode) && !"full".equals(mode)) {
+            throw new IllegalArgumentException(
+                    "Unsupported MTA analysis mode '" + requestedMode
+                            + "'. Expected 'source-only' or 'full'.");
+        }
+        return mode;
     }
 
     /**

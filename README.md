@@ -89,3 +89,11 @@ Generated migration plans use project-relative affected-file paths, show the act
 The default catalog pins `rewrite-maven-plugin` 6.46.1, which is resolvable from Maven Central and is aligned with the Rewrite 8.90.2 core used by the Workbench recipe module. This keeps the default migration workflow credential-free.
 
 `rewriteRepositoryUrl` is optional. Leave it blank for the default Maven Central flow. If a future catalog intentionally points it at an authenticated repository such as Code Genome, configure a Maven `<server>` with id `codegenome` or set `CODE_GENOME_USERNAME` and `CODE_GENOME_TOKEN`; the Workbench will use those credentials only in its temporary Maven settings file.
+
+### MTA project-scope safety
+
+The Workbench defaults to `mta.strictProjectScope: true`, which forces MTA `source-only` analysis.
+This prevents Java/Maven dependency analysis from traversing the local Maven repository, parent/reactor
+modules, or other directories outside the selected application tree. To intentionally enable dependency-aware
+MTA analysis, set both `strictProjectScope: false` and `mode: full`. Normalized findings are still filtered
+to the canonical application root.

@@ -11,6 +11,27 @@ recipeList:
 
 ---
 type: specs.openrewrite.org/v1beta/recipe
+name: com.jackson.mta.foundation.EnsureJakartaFacesCompileApi
+displayName: Ensure Jakarta Faces API is available for migration compilation
+description: >-
+  Guarantees the Jakarta Faces 4 API is present with provided scope so OpenRewrite and Maven can
+  resolve PrimeFaces 16 types such as jakarta.faces.model.DataModel even when the legacy application
+  relied on the application server to supply JSF and declared no Faces API dependency.
+recipeList:
+  # Normalize an existing declaration first. This ordering avoids AddDependency creating
+  # a duplicate when jakarta.faces-api already exists with compile/default scope.
+  - org.openrewrite.maven.ChangeDependencyScope:
+      groupId: jakarta.faces
+      artifactId: jakarta.faces-api
+      newScope: provided
+  - org.openrewrite.maven.AddDependency:
+      groupId: jakarta.faces
+      artifactId: jakarta.faces-api
+      version: 4.0.1
+      scope: provided
+
+---
+type: specs.openrewrite.org/v1beta/recipe
 name: com.jackson.mta.foundation.MigrateJakartaDependencies
 displayName: Migrate common Java EE API dependencies to Jakarta EE 10 coordinates
 description: >-
@@ -98,7 +119,9 @@ recipeList:
       overrideManagedVersion: false
       changeManagedDependency: true
   # These dependencies are additive because legacy applications do not always declare
-  # equivalent javax artifacts even when source migration introduces CDI/Annotation APIs.
+  # equivalent javax artifacts even when the application server supplied them at runtime.
+  # Ensure Faces is present before any Jakarta-only PrimeFaces dependency is introduced.
+  - com.jackson.mta.foundation.EnsureJakartaFacesCompileApi
   - org.openrewrite.maven.AddDependency:
       groupId: jakarta.annotation
       artifactId: jakarta.annotation-api
@@ -262,6 +285,7 @@ displayName: Upgrade PrimeFaces to 16.0.0
 description: >-
   Upgrades org.primefaces:primefaces to the Jakarta-only PrimeFaces 16 baseline. PrimeFaces 16 no longer requires a Jakarta classifier.
 recipeList:
+  - com.jackson.mta.foundation.EnsureJakartaFacesCompileApi
   - org.openrewrite.maven.UpgradeDependencyVersion:
       groupId: org.primefaces
       artifactId: primefaces
