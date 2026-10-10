@@ -1,16 +1,14 @@
 projectName: customer-portal
 profile: standard
 mta:
-  # Legacy scalar target remains supported; targets is the preferred explicit scope.
-  target: eap82
+  # sources/targets are native MTA 8.3 technology selectors.
+  # Confirm the installed CLI values with: mta-cli rules list-sources / list-targets
   sources:
     - eap7
-    - jsf2
-    - primefaces6
   targets:
-    - eap82
-    - faces4
-    - primefaces16
+    - eap8
+    - openjdk21
+    - jakarta-ee
   # Supported values: source-only or full.
   mode: source-only
   # In full mode, also analyze dependencies MTA classifies as known open-source libraries.

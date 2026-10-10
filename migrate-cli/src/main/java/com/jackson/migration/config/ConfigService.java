@@ -57,45 +57,77 @@ public class ConfigService {
         yaml.writerWithDefaultPrettyPrinter().writeValue(file.toFile(), config);
     }
     /**
-     * Applies profile-aware MTA source/target defaults while preserving explicit user values and
-     * the legacy scalar {@code mta.target} setting.
+     * Applies profile-aware MTA 8.3 source/target defaults while preserving explicit valid
+     * user values and translating Workbench pseudo-selectors emitted by older releases.
+     *
+     * <p>{@code mta.sources} and {@code mta.targets} are passed directly to MTA, so they must
+     * contain native MTA technology selectors. Framework-specific Workbench concepts such as
+     * JSF 2, Faces 4, PrimeFaces 6.2, and PrimeFaces 16 are represented by custom rule metadata,
+     * not by the MTA source/target CLI arguments.</p>
      */
     private void normalizeMtaScope(MigrationConfig config) {
         if (config.mta.sources == null) config.mta.sources = new java.util.ArrayList<>();
         if (config.mta.targets == null) config.mta.targets = new java.util.ArrayList<>();
 
-        if (config.mta.sources.isEmpty()) {
-            if ("primefaces-only".equals(config.profile)) {
-                config.mta.sources.add("primefaces6");
-            } else if ("assessment-only".equals(config.profile)) {
-                config.mta.sources.addAll(List.of("eap7", "jsf2"));
-            } else {
-                config.mta.sources.addAll(List.of("eap7", "jsf2", "primefaces6"));
+        // v21 and earlier wrote Workbench-specific pseudo-sources that are not native MTA 8.3
+        // source technologies. Translate them away when older migration.yaml files are loaded.
+        config.mta.sources = config.mta.sources.stream()
+                .filter(java.util.Objects::nonNull)
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .filter(value -> !"jsf2".equals(value) && !"primefaces6".equals(value))
+                .distinct()
+                .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
+
+        // Translate only known Workbench pseudo-targets. Preserve all other explicit values so
+        // users can select any technology actually exposed by their installed MTA 8.3 CLI.
+        java.util.ArrayList<String> normalizedTargets = new java.util.ArrayList<>();
+        for (String raw : config.mta.targets) {
+            if (raw == null || raw.isBlank()) continue;
+            String value = raw.trim();
+            switch (value) {
+                case "eap82" -> addIfMissing(normalizedTargets, "eap8");
+                case "faces4" -> addIfMissing(normalizedTargets, "jakarta-ee");
+                case "primefaces16" -> addIfMissing(normalizedTargets, "eap8");
+                default -> addIfMissing(normalizedTargets, value);
             }
+        }
+        config.mta.targets = normalizedTargets;
+
+        if (config.mta.sources.isEmpty()) {
+            // JBoss EAP 7 is a native MTA source and is the platform source for this Workbench.
+            config.mta.sources.add("eap7");
         }
 
         if (config.mta.targets.isEmpty()) {
             if (config.mta.target != null && !config.mta.target.isBlank()) {
-                addIfMissing(config.mta.targets, config.mta.target.trim());
+                String legacy = translateLegacyTarget(config.mta.target.trim());
+                addIfMissing(config.mta.targets, legacy);
             }
             if ("primefaces-only".equals(config.profile)) {
-                addIfMissing(config.mta.targets, "primefaces16");
-            } else if ("assessment-only".equals(config.profile)) {
-                addIfMissing(config.mta.targets, "eap82");
-                addIfMissing(config.mta.targets, "faces4");
+                addIfMissing(config.mta.targets, "eap8");
             } else {
-                addIfMissing(config.mta.targets, "eap82");
-                addIfMissing(config.mta.targets, "faces4");
-                addIfMissing(config.mta.targets, "primefaces16");
+                // Native MTA 8.3 targets for the Workbench's EAP 8 / Jakarta / Java 21 goal.
+                addIfMissing(config.mta.targets, "eap8");
+                addIfMissing(config.mta.targets, "openjdk21");
+                addIfMissing(config.mta.targets, "jakarta-ee");
             }
-        } else {
-            config.mta.targets = config.mta.targets.stream()
-                    .filter(java.util.Objects::nonNull)
-                    .map(String::trim)
-                    .filter(value -> !value.isBlank())
-                    .distinct()
-                    .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
+        } else if (!"primefaces-only".equals(config.profile)) {
+            // Older generated configurations translated above might otherwise omit the Java 21
+            // target. Add it when the configuration clearly came from the Workbench's legacy
+            // EAP/Faces/PrimeFaces target set.
+            boolean workbenchPlatformTarget = config.mta.targets.contains("eap8")
+                    || config.mta.targets.contains("jakarta-ee");
+            if (workbenchPlatformTarget) addIfMissing(config.mta.targets, "openjdk21");
         }
+    }
+
+    private String translateLegacyTarget(String value) {
+        return switch (value) {
+            case "eap82", "primefaces16" -> "eap8";
+            case "faces4" -> "jakarta-ee";
+            default -> value;
+        };
     }
 
     private void addIfMissing(List<String> values, String value) {

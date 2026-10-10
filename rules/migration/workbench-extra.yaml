@@ -3,8 +3,10 @@
   effort: 2
   description: Legacy PrimeFaces Calendar component detected
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     builtin.filecontent:
       filePattern: "\\.xhtml$"
@@ -17,8 +19,10 @@
   effort: 3
   description: PrimeFaces Schedule requires LocalDateTime migration
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     or:
       - builtin.filecontent:
@@ -38,8 +42,10 @@
   effort: 3
   description: PrimeFaces Timeline requires LocalDateTime and builder migration
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     or:
       - builtin.filecontent:
@@ -56,8 +62,10 @@
   effort: 2
   description: Legacy DataTable filter API may be in use
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     builtin.filecontent:
       filePattern: "\\.java$"
@@ -70,8 +78,10 @@
   effort: 2
   description: Removed PrimeFaces Facelet helper function detected
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     builtin.filecontent:
       filePattern: "\\.xhtml$"
@@ -84,8 +94,10 @@
   effort: 1
   description: Removed PrimeFaces Watermark client API detected
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     builtin.filecontent:
       filePattern: "\\.(xhtml|js)$"

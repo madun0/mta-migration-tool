@@ -40,6 +40,25 @@ class CustomRuleSemanticsTest {
         assertTrue(timelineRule.contains("new\\\\s+TimelineEvent"));
     }
 
+    @Test
+    void reservedMtaSourceAndTargetLabelsUseNativeMtaTechnologies() throws Exception {
+        Path root = Path.of("..").toAbsolutePath().normalize();
+        if (!Files.exists(root.resolve("rules/migration/primefaces.yaml"))) root = Path.of(".").toAbsolutePath();
+
+        String combined = Files.readString(root.resolve("rules/migration/faces4.yaml"))
+                + Files.readString(root.resolve("rules/migration/primefaces.yaml"))
+                + Files.readString(root.resolve("rules/migration/workbench-extra.yaml"));
+
+        assertFalse(combined.contains("konveyor.io/source=jsf2"));
+        assertFalse(combined.contains("konveyor.io/source=primefaces6"));
+        assertFalse(combined.contains("konveyor.io/target=faces4"));
+        assertFalse(combined.contains("konveyor.io/target=primefaces16"));
+        assertTrue(combined.contains("konveyor.io/source=eap7"));
+        assertTrue(combined.contains("konveyor.io/target=eap8"));
+        assertTrue(combined.contains("workbench.io/source-framework=jsf2"));
+        assertTrue(combined.contains("workbench.io/source-framework=primefaces6"));
+    }
+
     private String block(String yaml, String ruleId) {
         int start = yaml.indexOf("ruleID: " + ruleId);
         int end = yaml.indexOf("- ruleID:", start + 10);

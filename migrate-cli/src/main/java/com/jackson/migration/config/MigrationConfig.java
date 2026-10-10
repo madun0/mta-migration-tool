@@ -37,10 +37,10 @@ public class MigrationConfig {
          */
         public String target;
 
-        /** Source technologies used to select relevant MTA rules. */
+        /** Native MTA source technologies passed directly to {@code mta-cli analyze --source}. */
         public List<String> sources = new ArrayList<>();
 
-        /** Target technologies used to select relevant MTA rules. */
+        /** Native MTA target technologies passed directly to {@code mta-cli analyze --target}. */
         public List<String> targets = new ArrayList<>();
 
         /**

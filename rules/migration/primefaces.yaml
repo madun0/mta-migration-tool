@@ -7,8 +7,10 @@
   effort: 1
   description: PrimeFaces 6.2 or older dependency detected
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   links:
     - title: PrimeFaces migration guides
       url: https://github.com/primefaces/primefaces/blob/master/docs/migrationguide/migrationguide.md
@@ -31,8 +33,10 @@
   effort: 2
   description: Legacy PrimeFaces RequestContext API detected
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   links:
     - title: PrimeFaces 6.2 to 7 migration guide
       url: https://github.com/primefaces/primefaces/blob/master/docs/migrationguide/7_0.md
@@ -54,8 +58,10 @@
   effort: 3
   description: Removed PrimeFaces Push API detected
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     java.referenced:
       location: PACKAGE
@@ -73,8 +79,10 @@
   effort: 1
   description: PrimeFaces autoUpdate attribute requires review
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     builtin.filecontent:
       filePattern: "\\.xhtml$"
@@ -91,8 +99,10 @@
   effort: 1
   description: OverlayPanel appendToBody attribute is removed
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     builtin.filecontent:
       filePattern: "\\.xhtml$"
@@ -109,8 +119,10 @@
   effort: 1
   description: DataTable rowsPerPageTemplate may use removed star syntax
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     builtin.filecontent:
       filePattern: "\\.xhtml$"
@@ -127,8 +139,10 @@
   effort: 1
   description: PrimeFaces InputMask dynamic mask or validation override requires migration review
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     or:
       - builtin.filecontent:
@@ -149,8 +163,10 @@
   effort: 2
   description: Legacy PrimeFaces UploadedFile package detected
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   links:
     - title: PrimeFaces 7 to 8 migration guide
       url: https://github.com/primefaces/primefaces/blob/master/docs/migrationguide/8_0.md
@@ -171,8 +187,10 @@
   effort: 1
   description: Legacy fileUploadListener attribute detected
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     builtin.filecontent:
       filePattern: "\\.xhtml$"
@@ -190,8 +208,10 @@
   effort: 1
   description: UploadedFile getContents() may require rename
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     builtin.filecontent:
       filePattern: "\\.java$"
@@ -208,8 +228,10 @@
   effort: 1
   description: UploadedFile getInputstream() may require rename
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     builtin.filecontent:
       filePattern: "\\.java$"
@@ -226,8 +248,10 @@
   effort: 2
   description: Removed PrimeFaces ByteArrayContent API detected
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     java.referenced:
       location: IMPORT
@@ -244,8 +268,10 @@
   effort: 2
   description: Removed LazyDefaultStreamedContent API detected
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     java.referenced:
       location: IMPORT
@@ -262,8 +288,10 @@
   effort: 2
   description: Legacy DefaultStreamedContent constructor usage requires review
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     builtin.filecontent:
       filePattern: "\\.java$"
@@ -281,8 +309,10 @@
   effort: 2
   description: DynamicMenuModel is removed
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     java.referenced:
       location: IMPORT
@@ -299,8 +329,10 @@
   effort: 1
   description: MenuModel addElement() may require migration
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     builtin.filecontent:
       filePattern: "\\.java$"
@@ -317,8 +349,10 @@
   effort: 3
   description: LazyDataModel implementation requires migration review
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     java.referenced:
       location: IMPORT
@@ -337,8 +371,10 @@
   effort: 1
   description: Legacy PrimeFaces JSON package detected
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     java.referenced:
       location: PACKAGE
@@ -356,8 +392,10 @@
   effort: 4
   description: Legacy PrimeFaces chart model API detected
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   links:
     - title: PrimeFaces 12 to 13 migration guide
       url: https://github.com/primefaces/primefaces/blob/master/docs/migrationguide/13_0_0.md
@@ -378,8 +416,10 @@
   effort: 2
   description: PrimeFaces chart view requires target-version review
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     builtin.filecontent:
       filePattern: "\\.xhtml$"
@@ -398,8 +438,10 @@
   effort: 2
   description: p:repeat was removed
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     builtin.filecontent:
       filePattern: "\\.xhtml$"
@@ -416,8 +458,10 @@
   effort: 2
   description: p:inputSwitch is removed in the target PrimeFaces line
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   links:
     - title: PrimeFaces 14 to 15 migration guide
       url: https://github.com/primefaces/primefaces/blob/master/docs/migrationguide/15_0_0.md
@@ -438,8 +482,10 @@
   effort: 2
   description: Legacy PrimeFaces Commons FileUpload filter detected
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     builtin.filecontent:
       filePattern: "web\\.xml$"
@@ -457,8 +503,10 @@
   effort: 2
   description: Legacy p:fileUpload validation attributes require migration
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     builtin.filecontent:
       filePattern: "\\.xhtml$"
@@ -477,8 +525,10 @@
   effort: 2
   description: DataTable filterOptions attribute was removed
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     builtin.filecontent:
       filePattern: "\\.xhtml$"
@@ -496,8 +546,10 @@
   effort: 2
   description: PrimeFaces UIData type was renamed
   labels:
-    - konveyor.io/source=primefaces6
-    - konveyor.io/target=primefaces16
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=primefaces6
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=primefaces16
   when:
     java.referenced:
       location: TYPE

@@ -7,8 +7,10 @@
   effort: 3
   description: JSF @ManagedBean is removed in Jakarta Faces 4
   labels:
-    - konveyor.io/source=jsf2
-    - konveyor.io/target=faces4
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=jsf2
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=faces4
   links:
     - title: Jakarta Faces 4.0 changes
       url: https://jakarta.ee/specifications/faces/4.0/
@@ -33,8 +35,10 @@
   effort: 2
   description: Legacy JSF @ManagedProperty requires CDI-aware migration
   labels:
-    - konveyor.io/source=jsf2
-    - konveyor.io/target=faces4
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=jsf2
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=faces4
   links:
     - title: JBoss EAP 8 migration guide - Faces managed beans
       url: https://docs.redhat.com/en/documentation/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/application-migration-from-jakarta-ee-8-to-ee-10_default
@@ -58,8 +62,10 @@
   effort: 2
   description: Legacy JSF managed-bean scopes are removed
   labels:
-    - konveyor.io/source=jsf2
-    - konveyor.io/target=faces4
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=jsf2
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=faces4
   when:
     or:
       - java.referenced:
@@ -92,8 +98,10 @@
   effort: 2
   description: Native JSF Expression Language APIs are removed
   labels:
-    - konveyor.io/source=jsf2
-    - konveyor.io/target=faces4
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=jsf2
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=faces4
   when:
     java.referenced:
       location: PACKAGE
@@ -112,8 +120,10 @@
   effort: 3
   description: javax.faces.el.MethodBinding is removed in Faces 4
   labels:
-    - konveyor.io/source=jsf2
-    - konveyor.io/target=faces4
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=jsf2
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=faces4
   when:
     java.referenced:
       location: TYPE
@@ -131,8 +141,10 @@
   effort: 3
   description: javax.faces.el.ValueBinding is removed in Faces 4
   labels:
-    - konveyor.io/source=jsf2
-    - konveyor.io/target=faces4
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=jsf2
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=faces4
   when:
     java.referenced:
       location: TYPE
@@ -150,8 +162,10 @@
   effort: 3
   description: ResourceResolver is removed in Faces 4
   labels:
-    - konveyor.io/source=jsf2
-    - konveyor.io/target=faces4
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=jsf2
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=faces4
   when:
     java.referenced:
       location: TYPE
@@ -169,8 +183,10 @@
   effort: 2
   description: Removed PreJsf2ExceptionHandlerFactory reference detected
   labels:
-    - konveyor.io/source=jsf2
-    - konveyor.io/target=faces4
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=jsf2
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=faces4
   when:
     builtin.filecontent:
       filePattern: "\\.(java|xml)$"
@@ -189,8 +205,10 @@
   effort: 2
   description: Removed UIComponent CURRENT_* constants may be in use
   labels:
-    - konveyor.io/source=jsf2
-    - konveyor.io/target=faces4
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=jsf2
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=faces4
   when:
     builtin.filecontent:
       filePattern: "\\.java$"
@@ -209,8 +227,10 @@
   effort: 5
   description: JSP-based Faces views are not supported by Faces 4
   labels:
-    - konveyor.io/source=jsf2
-    - konveyor.io/target=faces4
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=jsf2
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=faces4
   links:
     - title: JBoss EAP 8 migration guide - Faces and JSP
       url: https://docs.redhat.com/en/documentation/red_hat_jboss_enterprise_application_platform/8.0/html/migration_guide/application-migration-from-jakarta-ee-8-to-ee-10_default
@@ -231,8 +251,10 @@
   effort: 3
   description: FacesServlet appears to be mapped to JSP views
   labels:
-    - konveyor.io/source=jsf2
-    - konveyor.io/target=faces4
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=jsf2
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=faces4
   when:
     builtin.filecontent:
       filePattern: "web\\.xml$"
@@ -250,8 +272,10 @@
   effort: 3
   description: faces-config.xml declares legacy managed beans
   labels:
-    - konveyor.io/source=jsf2
-    - konveyor.io/target=faces4
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=jsf2
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=faces4
   when:
     builtin.filecontent:
       filePattern: "faces-config\\.xml$"
@@ -270,8 +294,10 @@
   effort: 1
   description: Legacy JSF Facelets namespace is still in use
   labels:
-    - konveyor.io/source=jsf2
-    - konveyor.io/target=faces4
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=jsf2
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=faces4
   when:
     builtin.filecontent:
       filePattern: "\\.(xhtml|tag)$"
@@ -291,8 +317,10 @@
   effort: 1
   description: Legacy JSTL namespace is used in a Faces view
   labels:
-    - konveyor.io/source=jsf2
-    - konveyor.io/target=faces4
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=jsf2
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=faces4
   when:
     builtin.filecontent:
       filePattern: "\\.(xhtml|tag)$"
@@ -310,8 +338,10 @@
   effort: 2
   description: Legacy jsf JavaScript API may require migration
   labels:
-    - konveyor.io/source=jsf2
-    - konveyor.io/target=faces4
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=jsf2
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=faces4
   when:
     builtin.filecontent:
       filePattern: "\\.(js|ts|xhtml|properties)$"
@@ -329,8 +359,10 @@
   effort: 1
   description: Legacy JSF secret-key JNDI name may require rename
   labels:
-    - konveyor.io/source=jsf2
-    - konveyor.io/target=faces4
+    - konveyor.io/source=eap7
+    - workbench.io/source-framework=jsf2
+    - konveyor.io/target=eap8
+    - workbench.io/target-framework=faces4
   when:
     builtin.filecontent:
       pattern: "jsf/(ClientSideSecretKey|FlashSecretKey)"

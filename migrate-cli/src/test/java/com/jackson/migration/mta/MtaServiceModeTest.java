@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /** Regression tests for YAML-only MTA mode selection and mode-aware finding scope. */
@@ -66,6 +67,23 @@ class MtaServiceModeTest {
         Files.writeString(settings, "<settings/>\n");
 
         assertEquals(settings.toRealPath(), MtaService.resolveMavenSettings(project.toRealPath(), ".mvn/settings.xml"));
+    }
+
+    @Test
+    void parsesNativeTechnologyNamesFromMta83ListOutput() {
+        String output = """
+                Available migration targets:
+                  - eap8
+                  - openjdk21
+                  - jakarta-ee
+                  - cloud-readiness
+                """;
+
+        var values = MtaService.parseTechnologyNames(output);
+
+        assertTrue(values.contains("eap8"));
+        assertTrue(values.contains("openjdk21"));
+        assertTrue(values.contains("jakarta-ee"));
     }
 
 }

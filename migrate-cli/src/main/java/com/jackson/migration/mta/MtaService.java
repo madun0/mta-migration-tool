@@ -16,7 +16,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Runs the MTA CLI with the workbench custom rules and persists normalized findings for planning and verification.
@@ -62,6 +64,8 @@ public class MtaService {
         if (targets.isEmpty() && config.mta.target != null && !config.mta.target.isBlank()) {
             targets.add(config.mta.target.trim());
         }
+
+        validateMtaTechnologyScope(mta, projectRoot, sources, targets);
 
         List<String> command = new ArrayList<>(List.of(
                 mta.toString(), "analyze",
@@ -141,6 +145,77 @@ public class MtaService {
             System.out.println("MTA dependency inventory: " + effectiveOutput.resolve("dependencies.yaml"));
         }
         return findings;
+    }
+
+    /**
+     * Validates the configured source and target technologies against the installed MTA CLI.
+     *
+     * <p>MTA 8.2+ exposes the authoritative technology lists through
+     * {@code mta-cli rules list-sources} and {@code mta-cli rules list-targets}. The Workbench
+     * intentionally validates against the executable it will actually invoke rather than
+     * maintaining a second hard-coded catalog that can drift from MTA 8.3 patch releases.</p>
+     */
+    void validateMtaTechnologyScope(
+            Path mta,
+            Path workingDirectory,
+            Set<String> sources,
+            Set<String> targets) throws IOException, InterruptedException {
+
+        Set<String> availableSources = queryMtaTechnologies(mta, workingDirectory, "list-sources");
+        Set<String> availableTargets = queryMtaTechnologies(mta, workingDirectory, "list-targets");
+
+        List<String> invalidSources = sources.stream()
+                .filter(value -> !availableSources.contains(value.toLowerCase(Locale.ROOT)))
+                .toList();
+        List<String> invalidTargets = targets.stream()
+                .filter(value -> !availableTargets.contains(value.toLowerCase(Locale.ROOT)))
+                .toList();
+
+        if (!invalidSources.isEmpty() || !invalidTargets.isEmpty()) {
+            StringBuilder message = new StringBuilder("migration.yaml contains MTA technologies not accepted by the installed CLI.");
+            if (!invalidSources.isEmpty()) message.append(" Invalid sources: ").append(invalidSources).append('.');
+            if (!invalidTargets.isEmpty()) message.append(" Invalid targets: ").append(invalidTargets).append('.');
+            message.append(" Run 'mta-cli rules list-sources' and 'mta-cli rules list-targets' to see the accepted MTA 8.3 values.");
+            throw new IllegalArgumentException(message.toString());
+        }
+    }
+
+    private Set<String> queryMtaTechnologies(
+            Path mta,
+            Path workingDirectory,
+            String subcommand) throws IOException, InterruptedException {
+        CommandResult result = runner.run(
+                workingDirectory,
+                List.of(mta.toString(), "rules", subcommand));
+        if (!result.success()) {
+            throw new IOException("Unable to query MTA technologies with 'mta-cli rules "
+                    + subcommand + "' (exit code " + result.exitCode() + ").");
+        }
+        Set<String> values = parseTechnologyNames(result.output());
+        if (values.isEmpty()) {
+            throw new IOException("MTA returned no technology names for 'mta-cli rules "
+                    + subcommand + "'.");
+        }
+        return values;
+    }
+
+    private static final Pattern ANSI_ESCAPE = Pattern.compile("\\u001B\\[[;\\d]*[ -/]*[@-~]");
+    private static final Pattern TECHNOLOGY_TOKEN = Pattern.compile("[A-Za-z0-9][A-Za-z0-9._:+-]*");
+
+    /**
+     * Extracts technology identifiers from MTA's human-readable list output. The parser is
+     * intentionally tolerant of headings, tables, bullets, ANSI color, and whitespace so it
+     * remains compatible with the MTA 8.3 CLI presentation format.
+     */
+    static Set<String> parseTechnologyNames(String output) {
+        LinkedHashSet<String> values = new LinkedHashSet<>();
+        if (output == null || output.isBlank()) return values;
+        String clean = ANSI_ESCAPE.matcher(output).replaceAll("");
+        var matcher = TECHNOLOGY_TOKEN.matcher(clean);
+        while (matcher.find()) {
+            values.add(matcher.group().toLowerCase(Locale.ROOT));
+        }
+        return values;
     }
 
     /**
