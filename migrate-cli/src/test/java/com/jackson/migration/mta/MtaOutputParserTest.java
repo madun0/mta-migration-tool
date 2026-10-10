@@ -169,4 +169,34 @@ class MtaOutputParserTest {
         assertFalse(MtaOutputParser.isWithinProjectPath(root, "C:/work/other/Bean.java"));
     }
 
+    @Test
+    void capturesInsightsSeparatelyWithoutMixingThemIntoActionableFindings() throws Exception {
+        Path report = temp.resolve("insights-output.yaml");
+        Files.writeString(report, """
+                - name: mixed-report
+                  violations:
+                    migration-rule:
+                      category: mandatory
+                      incidents:
+                        - uri: file:///workspace/src/main/java/demo/Bean.java
+                          lineNumber: 10
+                          message: migrate this
+                  insights:
+                    javaee-technology-usage-00020-jakarta:
+                      description: JavaEE Jakarta
+                      incidents:
+                        - uri: file:///workspace/src/main/java/demo/Bean.java
+                          lineNumber: 7
+                          message: discovered CDI
+                """);
+
+        MtaOutputParser parser = new MtaOutputParser();
+        List<MigrationFinding> findings = parser.parse(report);
+        List<MigrationFinding> insights = parser.parseInsights(report);
+
+        assertEquals(List.of("migration-rule"), findings.stream().map(MigrationFinding::ruleId).toList());
+        assertEquals(List.of("javaee-technology-usage-00020-jakarta"), insights.stream().map(MigrationFinding::ruleId).toList());
+        assertEquals("insight", insights.get(0).category());
+    }
+
 }

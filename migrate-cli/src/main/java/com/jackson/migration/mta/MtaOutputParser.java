@@ -66,6 +66,44 @@ public class MtaOutputParser {
         return filterGeneratedFindings(findings);
     }
 
+    /**
+     * Parses MTA insight incidents separately from migration issues. Insights are useful report
+     * context but are deliberately not fed into Workbench planning/residual classification.
+     */
+    public List<MigrationFinding> parseInsights(Path outputYaml) throws IOException {
+        if (!Files.exists(outputYaml)) return List.of();
+        JsonNode root = yaml.readTree(outputYaml.toFile());
+        List<MigrationFinding> insights = new ArrayList<>();
+        scanInsights(root, insights, new HashSet<>());
+        return filterGeneratedFindings(insights);
+    }
+
+    /** Recursively extracts entries beneath MTA's insights maps. */
+    private void scanInsights(JsonNode node, List<MigrationFinding> out, Set<String> seen) {
+        if (node == null) return;
+        if (node.isObject()) {
+            JsonNode insights = node.get("insights");
+            if (insights != null && insights.isObject()) {
+                for (Map.Entry<String, JsonNode> entry : insights.properties()) {
+                    JsonNode rule = entry.getValue();
+                    JsonNode incidents = rule.get("incidents");
+                    if (incidents != null && incidents.isArray()) {
+                        for (JsonNode incident : incidents) {
+                            MigrationFinding finding = finding(entry.getKey(), rule, incident);
+                            add(out, seen, new MigrationFinding(
+                                    finding.ruleId(), finding.message(), finding.file(), finding.line(), "insight"));
+                        }
+                    }
+                }
+            }
+            for (Map.Entry<String, JsonNode> field : node.properties()) {
+                if (!"insights".equals(field.getKey())) scanInsights(field.getValue(), out, seen);
+            }
+        } else if (node.isArray()) {
+            for (JsonNode child : node) scanInsights(child, out, seen);
+        }
+    }
+
     /** Recursively visits arbitrary MTA report nodes and extracts rule incidents. */
     private void scan(JsonNode node, List<MigrationFinding> out, Set<String> seen) {
         if (node == null) return;

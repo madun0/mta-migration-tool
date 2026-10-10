@@ -25,7 +25,7 @@ class ConfigServiceTest {
         MigrationConfig config = service.load(temp);
 
         assertEquals(List.of("eap7", "jsf2", "primefaces6"), config.mta.sources);
-        assertEquals(List.of("eap8", "faces4", "primefaces16"), config.mta.targets);
+        assertEquals(List.of("eap82", "faces4", "primefaces16"), config.mta.targets);
     }
 
     @Test
@@ -69,6 +69,25 @@ class ConfigServiceTest {
         assertTrue(yaml.contains("mode"));
         assertTrue(yaml.contains("source-only"));
         assertFalse(yaml.contains("strictProjectScope"));
+    }
+
+    @Test
+    void fullModeDefaultsToKnownLibraryAnalysisAndLoadsOptionalMavenSettings() throws Exception {
+        Files.writeString(temp.resolve("migration.yaml"), """
+                profile: standard
+                mta:
+                  mode: full
+                  analyzeKnownLibraries: true
+                  mavenSettings: .mvn/custom-settings.xml
+                  disableMavenSearch: true
+                """);
+
+        MigrationConfig config = new ConfigService().load(temp);
+
+        assertEquals("full", config.mta.mode);
+        assertTrue(config.mta.analyzeKnownLibraries);
+        assertEquals(".mvn/custom-settings.xml", config.mta.mavenSettings);
+        assertTrue(config.mta.disableMavenSearch);
     }
 
 }

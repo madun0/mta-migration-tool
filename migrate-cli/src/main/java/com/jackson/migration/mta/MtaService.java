@@ -87,11 +87,28 @@ public class MtaService {
         command.add("--mode");
         command.add(analysisMode);
 
+        boolean analyzeKnownLibraries = "full".equals(analysisMode) && config.mta.analyzeKnownLibraries;
+        if (analyzeKnownLibraries) {
+            command.add("--analyze-known-libraries");
+        }
+
+        Path mavenSettings = resolveMavenSettings(projectRoot, config.mta.mavenSettings);
+        if (mavenSettings != null) {
+            command.add("--maven-settings");
+            command.add(mavenSettings.toString());
+        }
+        if (config.mta.disableMavenSearch) {
+            command.add("--disable-maven-search=true");
+        }
+
         Path executionDirectory = Files.createTempDirectory("mta-workbench-").toRealPath();
         System.out.println("MTA application root: " + projectRoot);
         System.out.println("MTA execution directory: " + executionDirectory);
         System.out.println("MTA scope: sources=" + sources + ", targets=" + targets);
         System.out.println("MTA analysis mode: " + analysisMode + " (from migration.yaml)");
+        System.out.println("MTA analyze known libraries: " + analyzeKnownLibraries);
+        System.out.println("MTA Maven settings: " + (mavenSettings == null ? "<MTA/Maven default>" : mavenSettings));
+        System.out.println("MTA disable Maven search: " + config.mta.disableMavenSearch);
         System.out.println("MTA custom ruleset: " + customRuleset);
 
         CommandResult result;
@@ -108,6 +125,7 @@ public class MtaService {
         }
 
         List<MigrationFinding> parsed = parser.parse(outputYaml);
+        List<MigrationFinding> insights = parser.parseInsights(outputYaml);
         List<MigrationFinding> findings = scopeFindings(parsed, projectRoot, analysisMode);
         int external = parsed.size() - parser.filterToProjectRoot(parsed, projectRoot).size();
         if ("source-only".equals(analysisMode) && external > 0) {
@@ -116,6 +134,12 @@ public class MtaService {
             System.out.println("MTA full mode retained " + external + " external dependency finding(s).");
         }
         json.writerWithDefaultPrettyPrinter().writeValue(effectiveOutput.resolve("findings.json").toFile(), findings);
+        json.writerWithDefaultPrettyPrinter().writeValue(effectiveOutput.resolve("insights.json").toFile(), insights);
+        System.out.println("MTA actionable findings captured: " + findings.size());
+        System.out.println("MTA insights captured separately: " + insights.size());
+        if (Files.exists(effectiveOutput.resolve("dependencies.yaml"))) {
+            System.out.println("MTA dependency inventory: " + effectiveOutput.resolve("dependencies.yaml"));
+        }
         return findings;
     }
 
@@ -200,6 +224,21 @@ public class MtaService {
         } catch (IOException ignored) {
             // Best effort only.
         }
+    }
+
+    /** Resolves an optional Maven settings file configured in migration.yaml. */
+    static Path resolveMavenSettings(Path projectRoot, String configured) throws IOException {
+        if (configured == null || configured.isBlank()) return null;
+        Path candidate = Path.of(configured.trim());
+        if (!candidate.isAbsolute()) candidate = projectRoot.resolve(candidate);
+        candidate = candidate.toAbsolutePath().normalize();
+        if (!Files.exists(candidate)) {
+            throw new IOException("Configured MTA Maven settings file does not exist: " + candidate);
+        }
+        if (!Files.isRegularFile(candidate)) {
+            throw new IOException("Configured MTA Maven settings path is not a file: " + candidate);
+        }
+        return candidate.toRealPath();
     }
 
     /**

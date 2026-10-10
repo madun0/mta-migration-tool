@@ -81,10 +81,10 @@ public class ConfigService {
             if ("primefaces-only".equals(config.profile)) {
                 addIfMissing(config.mta.targets, "primefaces16");
             } else if ("assessment-only".equals(config.profile)) {
-                addIfMissing(config.mta.targets, "eap8");
+                addIfMissing(config.mta.targets, "eap82");
                 addIfMissing(config.mta.targets, "faces4");
             } else {
-                addIfMissing(config.mta.targets, "eap8");
+                addIfMissing(config.mta.targets, "eap82");
                 addIfMissing(config.mta.targets, "faces4");
                 addIfMissing(config.mta.targets, "primefaces16");
             }

@@ -54,6 +54,28 @@ public class MigrationConfig {
         public String mode = "source-only";
 
         /**
+         * Whether full-mode Java analysis should also apply rules to dependencies that MTA
+         * classifies as known open-source libraries. This is a separate MTA control from
+         * {@code mode: full}. It is only passed to MTA when full mode is selected.
+         */
+        public boolean analyzeKnownLibraries = true;
+
+        /**
+         * Optional Maven settings file used by MTA's Java dependency analysis. Relative paths are
+         * resolved against the application project root. Leave blank to let MTA/Maven use their
+         * normal settings discovery.
+         */
+        public String mavenSettings = "";
+
+        /**
+         * Whether MTA should avoid the remote Maven search index when classifying dependencies.
+         * Keep false for the most accurate classification. Set true in disconnected/restricted
+         * environments when the Maven search index is unavailable; MTA may then report more
+         * incidents because some dependencies can be classified as internal.
+         */
+        public boolean disableMavenSearch = false;
+
+        /**
          * Legacy v15-v19 compatibility field. MTA scope is controlled exclusively by
          * {@link #mode} beginning with v20. The property is ignored when reading older
          * migration.yaml files and is not written to newly generated configurations.

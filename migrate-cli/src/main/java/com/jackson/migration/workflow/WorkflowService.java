@@ -65,7 +65,7 @@ public class WorkflowService {
         MigrationConfig config = configs.load(project);
         Path output = project.resolve(".migration/assessment");
         List<MigrationFinding> findings = mta.assess(project, output, config);
-        System.out.println("MTA findings captured: " + findings.size());
+        System.out.println("Workbench planning findings: " + findings.size());
         return findings;
     }
 

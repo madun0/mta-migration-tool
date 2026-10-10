@@ -24,7 +24,7 @@ Generated `migration.yaml`:
 projectName: customer-portal
 profile: standard
 mta:
-  target: eap8
+  target: eap82
   mode: source-only
 validation:
   compileAfterFamily: true

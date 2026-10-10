@@ -100,6 +100,16 @@ Maven repository and parent/reactor modules. There is no command-line mode overr
 ```yaml
 mta:
   mode: full
+  analyzeKnownLibraries: true
+  # Optional when MTA must use a non-default corporate Maven settings file.
+  mavenSettings: "C:/Users/me/.m2/settings.xml"
+  # Optional fallback when the remote Maven search index is blocked/unavailable.
+  disableMavenSearch: false
 ```
+
+`mode: full` enables dependency-aware provider analysis, but MTA treats analysis of known open-source libraries as
+a separate option. The Workbench defaults `analyzeKnownLibraries` to `true` for comprehensive full-mode assessments.
+`mavenSettings` is passed directly to MTA as `--maven-settings`. Use `disableMavenSearch: true` only when Maven
+search is unavailable; dependency classification is then less reliable and may produce more incidents.
 
 The legacy `strictProjectScope` property from v15-v19 is ignored beginning with v20; `mode` is authoritative.

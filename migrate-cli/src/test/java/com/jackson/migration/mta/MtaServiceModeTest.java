@@ -59,4 +59,13 @@ class MtaServiceModeTest {
         assertEquals(List.of("app", "dependency"), service.scopeFindings(findings, project.toRealPath(), "full")
                 .stream().map(MigrationFinding::ruleId).toList());
     }
+    @Test
+    void resolvesRelativeMavenSettingsAgainstProjectRoot() throws Exception {
+        Path project = Files.createDirectories(temp.resolve("settings-app"));
+        Path settings = Files.createDirectories(project.resolve(".mvn")).resolve("settings.xml");
+        Files.writeString(settings, "<settings/>\n");
+
+        assertEquals(settings.toRealPath(), MtaService.resolveMavenSettings(project.toRealPath(), ".mvn/settings.xml"));
+    }
+
 }

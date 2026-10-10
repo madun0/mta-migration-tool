@@ -111,7 +111,16 @@ POMs, or reactor modules:
 ```yaml
 mta:
   mode: full
+  analyzeKnownLibraries: true
+  mavenSettings: ""
+  disableMavenSearch: false
 ```
+
+In full mode MTA can discover dependencies without necessarily applying rules to libraries it classifies as known
+open source. `analyzeKnownLibraries: true` enables that additional analysis. If corporate Maven access requires a
+specific settings file, set `mavenSettings`. In disconnected/restricted environments where MTA's remote Maven search
+index is unavailable, `disableMavenSearch: true` can be used as a fallback, at the cost of less reliable dependency
+classification.
 
 Beginning with v20, `mode` is authoritative and is configured only from `migration.yaml`; the legacy
 `strictProjectScope` property is ignored and there is no CLI mode override.
