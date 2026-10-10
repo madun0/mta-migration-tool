@@ -97,15 +97,21 @@ migrate migrate --project .
 
 ## MTA reads `.m2` or unrelated directories
 
-Use the default strict source boundary:
+Choose the analysis boundary in `migration.yaml`:
 
 ```yaml
 mta:
-  strictProjectScope: true
   mode: source-only
 ```
 
-`full` MTA mode analyzes source and dependencies and can legitimately inspect the Maven local repository,
-parent POMs, or reactor modules. With `strictProjectScope: true`, the Workbench forces `source-only` even
-when an older configuration still requests `full`. Set `strictProjectScope: false` only when dependency-aware
-analysis is intentional.
+`source-only` is the default and keeps normalized findings inside the selected application root. `full` analyzes
+source and dependencies and can legitimately inspect and report findings from the Maven local repository, parent
+POMs, or reactor modules:
+
+```yaml
+mta:
+  mode: full
+```
+
+Beginning with v20, `mode` is authoritative and is configured only from `migration.yaml`; the legacy
+`strictProjectScope` property is ignored and there is no CLI mode override.

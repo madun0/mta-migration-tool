@@ -126,3 +126,21 @@ mvn -pl recipes/primefaces-openrewrite-recipes \
   clean test
 mvn clean install
 ```
+
+## v20 verification addendum
+
+v20 fixes the MTA full-mode findings pipeline while keeping analysis mode YAML-only.
+
+Static/source verification performed in the packaging environment:
+
+- MTA mode selection is sourced from `MigrationConfig.mta.mode` only.
+- `AssessCommand` exposes no mode override.
+- `WorkflowService.plan()` and `verify()` pass the loaded `MigrationConfig` into finding loads.
+- `.m2/repository` is no longer treated as generated content.
+- `source-only` retains canonical application-root filtering.
+- `full` retains external dependency findings.
+- full-mode loads prefer raw `output.yaml` to recover findings stripped by v19 `findings.json`.
+- YAML/documentation examples were updated to remove `strictProjectScope`.
+- New regression tests cover source-only/full scoping and v19 recovery behavior.
+
+Maven is not installed in this packaging environment, so the JUnit/Maven suite must be executed on the target development workstation.

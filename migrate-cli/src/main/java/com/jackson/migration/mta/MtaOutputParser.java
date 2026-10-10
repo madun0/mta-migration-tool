@@ -120,13 +120,14 @@ public class MtaOutputParser {
     }
 
     /**
-     * Removes findings that point at Workbench-generated or build-generated files rather than
-     * application source. MTA output can contain embedded source snippets, and when the assessment
+     * Removes findings that point at Workbench-generated or build-generated files. Dependency
+     * findings are intentionally preserved here and are scoped later according to MTA mode.
+     * MTA output can contain embedded source snippets, and when the assessment
      * directory lives beneath the analyzed project a later assessment can rediscover those snippets
      * as if they were application files.
      *
      * @param findings findings to filter
-     * @return a new list containing only application findings
+     * @return a new list with Workbench/build-generated findings removed
      */
     public List<MigrationFinding> filterGeneratedFindings(List<MigrationFinding> findings) {
         if (findings == null || findings.isEmpty()) return List.of();
@@ -138,10 +139,10 @@ public class MtaOutputParser {
     /**
      * Keeps only findings that belong to the selected application root.
      *
-     * <p>MTA may inspect Maven dependencies, parent models, or other filesystem locations while
-     * building type information. Those locations are useful to the analyzer but must never be
-     * promoted into application migration findings. File-less/global findings are retained because
-     * they cannot be scoped to a source path.</p>
+     * <p>This is the {@code source-only} finding boundary. Full mode intentionally does not apply
+     * this filter because dependency, parent-model, and reactor-module incidents are part of the
+     * requested result. File-less/global findings are retained because they cannot be scoped to a
+     * source path.</p>
      *
      * @param findings normalized MTA findings
      * @param projectRoot canonical application project root
@@ -226,14 +227,13 @@ public class MtaOutputParser {
         return value.startsWith("/") || WINDOWS_DRIVE.matcher(value).matches();
     }
 
-    /** Returns true when a finding path belongs to generated Workbench/build/dependency metadata. */
+    /** Returns true when a finding path belongs to Workbench- or build-generated metadata. */
     private boolean isGeneratedPath(String file) {
         if (file == null || file.isBlank()) return false;
         String normalized = file.replace('\\', '/').toLowerCase(Locale.ROOT);
         return normalized.contains("/.migration/")
                 || normalized.contains("/target/")
-                || normalized.contains("/.git/")
-                || normalized.contains("/.m2/repository/");
+                || normalized.contains("/.git/");
     }
 
     /** Adds a finding only when its rule/file/line/message identity has not been seen. */

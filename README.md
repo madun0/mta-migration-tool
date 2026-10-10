@@ -90,10 +90,16 @@ The default catalog pins `rewrite-maven-plugin` 6.46.1, which is resolvable from
 
 `rewriteRepositoryUrl` is optional. Leave it blank for the default Maven Central flow. If a future catalog intentionally points it at an authenticated repository such as Code Genome, configure a Maven `<server>` with id `codegenome` or set `CODE_GENOME_USERNAME` and `CODE_GENOME_TOKEN`; the Workbench will use those credentials only in its temporary Maven settings file.
 
-### MTA project-scope safety
+### MTA analysis mode and project scope
 
-The Workbench defaults to `mta.strictProjectScope: true`, which forces MTA `source-only` analysis.
-This prevents Java/Maven dependency analysis from traversing the local Maven repository, parent/reactor
-modules, or other directories outside the selected application tree. To intentionally enable dependency-aware
-MTA analysis, set both `strictProjectScope: false` and `mode: full`. Normalized findings are still filtered
-to the canonical application root.
+MTA analysis mode is configured only in the application's `migration.yaml`. The default is `source-only`,
+which keeps normalized findings within the selected application tree. Set `mode: full` when dependency-aware
+analysis is required; full mode intentionally preserves dependency findings from locations such as the local
+Maven repository and parent/reactor modules. There is no command-line mode override.
+
+```yaml
+mta:
+  mode: full
+```
+
+The legacy `strictProjectScope` property from v15-v19 is ignored beginning with v20; `mode` is authoritative.

@@ -61,7 +61,7 @@ class MtaOutputParserTest {
         assertEquals("primefaces-calendar-0001", findings.get(0).ruleId());
     }
     @Test
-    void ignoresGeneratedWorkbenchAndBuildFindings() throws Exception {
+    void ignoresGeneratedWorkbenchAndBuildFindingsButRetainsMavenDependencies() throws Exception {
         Path report = temp.resolve("output.yaml");
         Files.writeString(report, """
                 - name: eap8/eap7
@@ -80,7 +80,7 @@ class MtaOutputParserTest {
                           message: Ignore Git metadata
                         - uri: file:///home/madun/.m2/repository/org/example/lib/1.0/lib-1.0.jar
                           lineNumber: 1
-                          message: Ignore Maven repository metadata
+                          message: Keep Maven repository dependency finding
                         - uri: file:///workspace/src/main/resources/META-INF/persistence.xml
                           lineNumber: 5
                           message: Keep application finding
@@ -88,8 +88,9 @@ class MtaOutputParserTest {
 
         List<MigrationFinding> findings = new MtaOutputParser().parse(report);
 
-        assertEquals(1, findings.size());
-        assertEquals("file:///workspace/src/main/resources/META-INF/persistence.xml", findings.get(0).file());
+        assertEquals(2, findings.size());
+        assertTrue(findings.stream().anyMatch(finding -> finding.file().contains("/.m2/repository/")));
+        assertTrue(findings.stream().anyMatch(finding -> finding.file().endsWith("/src/main/resources/META-INF/persistence.xml")));
     }
 
     @Test

@@ -1,5 +1,7 @@
 package com.jackson.migration.config;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,13 +54,12 @@ public class MigrationConfig {
         public String mode = "source-only";
 
         /**
-         * Enforces an application-source-only assessment boundary.
-         *
-         * <p>When {@code true} (the default), the Workbench forces MTA to use
-         * {@code --mode source-only} even if an older migration configuration requests
-         * {@code full}. Set this to {@code false} only when dependency-aware MTA analysis is
-         * intentionally required and external dependency filesystem access is acceptable.</p>
+         * Legacy v15-v19 compatibility field. MTA scope is controlled exclusively by
+         * {@link #mode} beginning with v20. The property is ignored when reading older
+         * migration.yaml files and is not written to newly generated configurations.
          */
+        @Deprecated
+        @JsonIgnore
         public boolean strictProjectScope = true;
     }
 

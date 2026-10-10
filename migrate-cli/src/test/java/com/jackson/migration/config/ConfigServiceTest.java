@@ -8,6 +8,8 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Verifies profile-aware MTA scope normalization and legacy target compatibility.
@@ -43,4 +45,30 @@ class ConfigServiceTest {
 
         assertEquals(List.of("eap82", "faces4", "primefaces16"), config.mta.targets);
     }
+    @Test
+    void fullModeComesFromMigrationYamlAndLegacyStrictProjectScopeDoesNotOverrideIt() throws Exception {
+        Files.writeString(temp.resolve("migration.yaml"), """
+                profile: standard
+                mta:
+                  mode: full
+                  strictProjectScope: true
+                """);
+
+        MigrationConfig config = new ConfigService().load(temp);
+
+        assertEquals("full", config.mta.mode);
+    }
+
+    @Test
+    void generatedConfigurationExposesModeButNotLegacyStrictProjectScope() throws Exception {
+        Path project = Files.createDirectories(temp.resolve("generated"));
+        new ConfigService().createDefault(project);
+
+        String yaml = Files.readString(project.resolve("migration.yaml"));
+
+        assertTrue(yaml.contains("mode"));
+        assertTrue(yaml.contains("source-only"));
+        assertFalse(yaml.contains("strictProjectScope"));
+    }
+
 }

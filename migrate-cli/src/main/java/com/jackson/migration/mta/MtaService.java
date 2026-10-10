@@ -39,14 +39,14 @@ public class MtaService {
      * <p>The application root is canonicalized with {@link Path#toRealPath()} before MTA starts.
      * MTA is launched from an isolated temporary working directory rather than the application's
      * parent directory. This is particularly important on Windows, where Maven/provider discovery
-     * can otherwise observe unrelated sibling directories. After analysis, findings are filtered
-     * against the canonical application root so dependency repositories and unrelated filesystem
-     * locations cannot become Workbench application findings.</p>
+     * can otherwise observe unrelated sibling directories. Finding scope then follows the mode from
+     * {@code migration.yaml}: {@code source-only} enforces the canonical application root, while
+     * {@code full} intentionally preserves external dependency findings.</p>
      *
      * @param project application project root to analyze
      * @param output directory where MTA output and normalized findings are stored
      * @param config application migration configuration
-     * @return normalized MTA findings scoped to the selected application root
+     * @return normalized MTA findings scoped according to the configured MTA mode
      * @throws IOException if MTA cannot be located, execution fails, or output cannot be persisted
      * @throws InterruptedException if the external MTA process is interrupted
      */
@@ -83,7 +83,7 @@ public class MtaService {
         command.add("--rules");
         command.add(customRuleset.toString());
 
-        String analysisMode = effectiveAnalysisMode(config.mta.mode, config.mta.strictProjectScope);
+        String analysisMode = effectiveAnalysisMode(config.mta.mode);
         command.add("--mode");
         command.add(analysisMode);
 
@@ -91,15 +91,7 @@ public class MtaService {
         System.out.println("MTA application root: " + projectRoot);
         System.out.println("MTA execution directory: " + executionDirectory);
         System.out.println("MTA scope: sources=" + sources + ", targets=" + targets);
-        System.out.println("MTA analysis mode: " + analysisMode
-                + " (strictProjectScope=" + config.mta.strictProjectScope + ")");
-        if (config.mta.strictProjectScope
-                && config.mta.mode != null
-                && !config.mta.mode.isBlank()
-                && !"source-only".equalsIgnoreCase(config.mta.mode.trim())) {
-            System.out.println("MTA strict project scope overrode requested mode '"
-                    + config.mta.mode.trim() + "' with 'source-only'.");
-        }
+        System.out.println("MTA analysis mode: " + analysisMode + " (from migration.yaml)");
         System.out.println("MTA custom ruleset: " + customRuleset);
 
         CommandResult result;
@@ -116,39 +108,45 @@ public class MtaService {
         }
 
         List<MigrationFinding> parsed = parser.parse(outputYaml);
-        List<MigrationFinding> findings = parser.filterToProjectRoot(parsed, projectRoot);
-        int excluded = parsed.size() - findings.size();
-        if (excluded > 0) {
-            System.out.println("MTA scope filter excluded " + excluded + " finding(s) outside application root.");
+        List<MigrationFinding> findings = scopeFindings(parsed, projectRoot, analysisMode);
+        int external = parsed.size() - parser.filterToProjectRoot(parsed, projectRoot).size();
+        if ("source-only".equals(analysisMode) && external > 0) {
+            System.out.println("MTA source-only scope excluded " + external + " finding(s) outside application root.");
+        } else if ("full".equals(analysisMode) && external > 0) {
+            System.out.println("MTA full mode retained " + external + " external dependency finding(s).");
         }
         json.writerWithDefaultPrettyPrinter().writeValue(effectiveOutput.resolve("findings.json").toFile(), findings);
         return findings;
     }
 
     /**
-     * Resolves the effective MTA analysis mode while honoring the Workbench source-boundary policy.
+     * Resolves the MTA analysis mode configured in {@code migration.yaml}.
      *
-     * <p>{@code full} instructs MTA's Java provider to analyze application source and dependencies.
-     * That is useful for dependency-aware assessments, but it can legitimately cause Maven and the
-     * Java provider to inspect files outside the selected project tree. Strict project scope therefore
-     * forces {@code source-only}. Dependency-aware analysis remains available as an explicit opt-in
-     * by setting {@code strictProjectScope: false} together with {@code mode: full}.</p>
+     * <p>The mode is intentionally YAML-only: {@code source-only} limits normalized findings to
+     * the selected application root, while {@code full} preserves dependency findings emitted by
+     * MTA, including local Maven repository and parent/reactor-module incidents. No CLI option
+     * overrides this setting.</p>
      *
      * @param requestedMode configured MTA mode
-     * @param strictProjectScope whether external dependency traversal is disallowed
      * @return {@code source-only} or {@code full}
      */
-    static String effectiveAnalysisMode(String requestedMode, boolean strictProjectScope) {
-        if (strictProjectScope) return "source-only";
-
+    static String effectiveAnalysisMode(String requestedMode) {
         String mode = requestedMode == null ? "" : requestedMode.trim().toLowerCase();
         if (mode.isBlank()) return "source-only";
         if (!"source-only".equals(mode) && !"full".equals(mode)) {
             throw new IllegalArgumentException(
                     "Unsupported MTA analysis mode '" + requestedMode
-                            + "'. Expected 'source-only' or 'full'.");
+                            + "'. Expected 'source-only' or 'full' in migration.yaml.");
         }
         return mode;
+    }
+
+    /** Applies the finding boundary associated with the configured MTA mode. */
+    List<MigrationFinding> scopeFindings(List<MigrationFinding> findings, Path projectRoot, String analysisMode) {
+        if ("full".equals(analysisMode)) {
+            return findings == null ? List.of() : List.copyOf(findings);
+        }
+        return parser.filterToProjectRoot(findings, projectRoot);
     }
 
     /**
@@ -243,33 +241,55 @@ public class MtaService {
     }
 
     /**
-     * Loads previously normalized findings and enforces the selected application root.
+     * Loads previously normalized findings using the same mode policy as assessment.
+     *
+     * <p>In {@code full} mode the raw MTA YAML is preferred when available. This intentionally
+     * recovers external dependency findings from assessments produced by v19 and earlier, where
+     * {@code findings.json} was incorrectly reduced to the application root. In
+     * {@code source-only} mode the selected application root remains the hard boundary.</p>
      *
      * @param project application root that owns the assessment
      * @param output MTA assessment directory
-     * @return normalized findings scoped to the application root
+     * @param config migration configuration loaded from {@code migration.yaml}
+     * @return normalized findings consistent with the configured MTA mode
      * @throws IOException if findings cannot be read or parsed
      */
-    public List<MigrationFinding> loadFindings(Path project, Path output) throws IOException {
+    public List<MigrationFinding> loadFindings(Path project, Path output, MigrationConfig config) throws IOException {
         Path projectRoot = canonicalProjectRoot(project);
         Path effectiveOutput = resolveOutputPath(project, projectRoot, output);
+        String analysisMode = effectiveAnalysisMode(config == null || config.mta == null ? null : config.mta.mode);
+        Path outputYaml = effectiveOutput.resolve("output.yaml");
         Path jsonFile = effectiveOutput.resolve("findings.json");
+
         List<MigrationFinding> findings;
-        if (Files.exists(jsonFile)) {
+        if ("full".equals(analysisMode) && Files.exists(outputYaml)) {
+            findings = parser.parse(outputYaml);
+        } else if (Files.exists(jsonFile)) {
             findings = json.readValue(
                     jsonFile.toFile(),
                     json.getTypeFactory().constructCollectionType(List.class, MigrationFinding.class));
             findings = parser.filterGeneratedFindings(findings);
         } else {
-            findings = parser.parse(effectiveOutput.resolve("output.yaml"));
+            findings = parser.parse(outputYaml);
         }
-        return parser.filterToProjectRoot(findings, projectRoot);
+        return scopeFindings(findings, projectRoot, analysisMode);
+    }
+
+    /**
+     * Backward-compatible source-only loader. Workflow code must use the configuration-aware
+     * overload so dependency findings are preserved when {@code mta.mode: full}.
+     */
+    @Deprecated
+    public List<MigrationFinding> loadFindings(Path project, Path output) throws IOException {
+        MigrationConfig config = new MigrationConfig();
+        config.mta.mode = "source-only";
+        return loadFindings(project, output, config);
     }
 
     /**
      * Loads findings without project-root enforcement for compatibility with callers that only
      * possess an assessment directory. Workbench workflow code should use
-     * {@link #loadFindings(Path, Path)}.
+     * {@link #loadFindings(Path, Path, MigrationConfig)}.
      */
     public List<MigrationFinding> loadFindings(Path output) throws IOException {
         Path jsonFile = output.resolve("findings.json");

@@ -12,7 +12,6 @@ mta:
     - faces4
     - primefaces16
   # Strict project scope keeps MTA inside this application's source tree.
-  strictProjectScope: true
   mode: source-only
 validation:
   compileAfterFamily: true
