@@ -11,6 +11,25 @@ recipeList:
 
 ---
 type: specs.openrewrite.org/v1beta/recipe
+name: com.jackson.mta.foundation.EnsureJakartaEe10CompileApi
+displayName: Ensure Jakarta EE 10 API is available for migration compilation
+description: >-
+  Guarantees the Jakarta EE 10 platform API is present with provided scope so Maven and OpenRewrite
+  can resolve application-server supplied APIs such as Servlet, Faces, Validation, Persistence, REST,
+  Transactions, CDI/EJB, and XML Binding even when the legacy EAP application declared none of them.
+recipeList:
+  - org.openrewrite.maven.ChangeDependencyScope:
+      groupId: jakarta.platform
+      artifactId: jakarta.jakartaee-api
+      newScope: provided
+  - org.openrewrite.maven.AddDependency:
+      groupId: jakarta.platform
+      artifactId: jakarta.jakartaee-api
+      version: 10.0.0
+      scope: provided
+
+---
+type: specs.openrewrite.org/v1beta/recipe
 name: com.jackson.mta.foundation.EnsureJakartaFacesCompileApi
 displayName: Ensure Jakarta Faces API is available for migration compilation
 description: >-
@@ -118,24 +137,20 @@ recipeList:
       newVersion: 4.0.1
       overrideManagedVersion: false
       changeManagedDependency: true
-  # These dependencies are additive because legacy applications do not always declare
-  # equivalent javax artifacts even when the application server supplied them at runtime.
-  # Ensure Faces is present before any Jakarta-only PrimeFaces dependency is introduced.
-  - com.jackson.mta.foundation.EnsureJakartaFacesCompileApi
-  - org.openrewrite.maven.AddDependency:
-      groupId: jakarta.annotation
-      artifactId: jakarta.annotation-api
-      version: 3.0.0
-  - org.openrewrite.maven.AddDependency:
-      groupId: jakarta.ejb
-      artifactId: jakarta.ejb-api
-      version: 4.0.1
-      scope: provided
-  - org.openrewrite.maven.AddDependency:
-      groupId: jakarta.enterprise
-      artifactId: jakarta.enterprise.cdi-api
-      version: 4.1.0
-      scope: provided
+  # Normalize explicitly declared API dependencies to provided scope. EAP supplies the
+  # implementations at runtime; these declarations exist only for migration/build attribution.
+  - org.openrewrite.maven.ChangeDependencyScope: { groupId: jakarta.faces, artifactId: jakarta.faces-api, newScope: provided }
+  - org.openrewrite.maven.ChangeDependencyScope: { groupId: jakarta.validation, artifactId: jakarta.validation-api, newScope: provided }
+  - org.openrewrite.maven.ChangeDependencyScope: { groupId: jakarta.annotation, artifactId: jakarta.annotation-api, newScope: provided }
+  - org.openrewrite.maven.ChangeDependencyScope: { groupId: jakarta.servlet, artifactId: jakarta.servlet-api, newScope: provided }
+  - org.openrewrite.maven.ChangeDependencyScope: { groupId: jakarta.persistence, artifactId: jakarta.persistence-api, newScope: provided }
+  - org.openrewrite.maven.ChangeDependencyScope: { groupId: jakarta.ws.rs, artifactId: jakarta.ws.rs-api, newScope: provided }
+  - org.openrewrite.maven.ChangeDependencyScope: { groupId: jakarta.transaction, artifactId: jakarta.transaction-api, newScope: provided }
+  - org.openrewrite.maven.ChangeDependencyScope: { groupId: jakarta.xml.bind, artifactId: jakarta.xml.bind-api, newScope: provided }
+  - org.openrewrite.maven.ChangeDependencyScope: { groupId: jakarta.ejb, artifactId: jakarta.ejb-api, newScope: provided }
+  # Legacy EAP applications frequently rely on server-provided APIs and declare none of the
+  # individual Java EE artifacts. Add the Jakarta EE 10 API as the single compile-time baseline.
+  - com.jackson.mta.foundation.EnsureJakartaEe10CompileApi
 
 ---
 type: specs.openrewrite.org/v1beta/recipe
@@ -285,7 +300,7 @@ displayName: Upgrade PrimeFaces to 16.0.0
 description: >-
   Upgrades org.primefaces:primefaces to the Jakarta-only PrimeFaces 16 baseline. PrimeFaces 16 no longer requires a Jakarta classifier.
 recipeList:
-  - com.jackson.mta.foundation.EnsureJakartaFacesCompileApi
+  - com.jackson.mta.foundation.EnsureJakartaEe10CompileApi
   - org.openrewrite.maven.UpgradeDependencyVersion:
       groupId: org.primefaces
       artifactId: primefaces

@@ -80,7 +80,7 @@ See `docs/USER-GUIDE.md`, `docs/EXAMPLE-MIGRATION.md`, and `docs/CODE-DOCUMENTAT
 
 ### Foundation automation
 
-The standard profile now automates the deterministic portion of the Java 21 / Jakarta EE 10 foundation before PrimeFaces-specific modernization. The recipe artifact includes Java 21 compiler normalization, curated Java EE `javax.*` package migration, common Jakarta Maven dependency changes, Servlet/Faces descriptor normalization, safe JSF scope migration, and the PrimeFaces 16 dependency upgrade. Ambiguous JSF managed-bean/injection semantics remain assisted work with generated verification checklists.
+The standard profile now automates the deterministic portion of the Java 21 / Jakarta EE 10 foundation before PrimeFaces-specific modernization. The recipe artifact includes Java 21 compiler normalization, curated Java EE `javax.*` package migration, common Jakarta Maven dependency changes, a `jakarta.platform:jakarta.jakartaee-api:10.0.0` provided compile baseline for EAP-hosted APIs, Servlet/Faces descriptor normalization, safe JSF scope migration, and the PrimeFaces 16 dependency upgrade. Ambiguous JSF managed-bean/injection semantics remain assisted work with generated verification checklists.
 
 Generated migration plans use project-relative affected-file paths, show the active OpenRewrite recipes, and distinguish MTA-backed migration tasks from post-review cleanup tasks.
 

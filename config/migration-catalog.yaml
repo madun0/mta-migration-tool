@@ -79,8 +79,8 @@ families:
     - Run affected page and bean lifecycle tests after conversion.
     compileAfterApply: false
   jakarta-dependencies:
-    description: Consolidate Maven findings that replace legacy javax artifacts/groupIds with Jakarta EE dependencies appropriate
-      for EAP 8.
+    description: Replace legacy javax Maven APIs with Jakarta EE equivalents and establish the Jakarta EE 10 provided compile
+      baseline required for EAP 8 migration.
     phase: FOUNDATION
     automation: AUTOMATIC
     mtaRuleIds: []
@@ -96,8 +96,8 @@ families:
     - <artifactId>javax.
     always: true
     reviewChecklist:
-    - Verify resulting Jakarta API dependencies are compatible with the EAP 8 BOM/dependency-management strategy.
-    - Remove redundant API versions when the target EAP BOM manages them.
+    - Verify the provided jakarta.platform:jakarta.jakartaee-api:10.0.0 compile baseline is compatible with the approved EAP 8 BOM/dependency-management strategy.
+    - Review explicitly migrated Jakarta API dependencies and remove redundant versions when the target EAP BOM manages them.
     - Defer compilation until the Jakarta dependency, import, descriptor, and Faces source transformations for this phase
       have completed.
     compileAfterApply: false

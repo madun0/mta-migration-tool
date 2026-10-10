@@ -48,39 +48,30 @@ class FoundationRecipeTransformationTest implements RewriteTest {
                     <version>1.0</version>
                     <dependencies>
                         <dependency>
-                            <groupId>jakarta.annotation</groupId>
-                            <artifactId>jakarta.annotation-api</artifactId>
-                            <version>3.0.0</version>
-                        </dependency>
-                        <dependency>
-                            <groupId>jakarta.ejb</groupId>
-                            <artifactId>jakarta.ejb-api</artifactId>
-                            <version>4.0.1</version>
-                            <scope>provided</scope>
-                        </dependency>
-                        <dependency>
-                            <groupId>jakarta.enterprise</groupId>
-                            <artifactId>jakarta.enterprise.cdi-api</artifactId>
-                            <version>4.1.0</version>
-                            <scope>provided</scope>
-                        </dependency>
-                        <dependency>
                             <groupId>jakarta.faces</groupId>
                             <artifactId>jakarta.faces-api</artifactId>
                             <version>4.0.1</version>
                             <scope>provided</scope>
                         </dependency>
+                        <dependency>
+                            <groupId>jakarta.platform</groupId>
+                            <artifactId>jakarta.jakartaee-api</artifactId>
+                            <version>10.0.0</version>
+                            <scope>provided</scope>
+                        </dependency>
                     </dependencies>
                 </project>
                 """,
-                spec -> spec.afterRecipe(FoundationRecipeTransformationTest::assertJakartaFacesDependency)
+                spec -> spec.afterRecipe(pom -> {
+                    assertJakartaFacesDependency(pom);
+                    assertJakartaEePlatformDependency(pom);
+                })
             )
         );
     }
 
-
     @Test
-    void addsRequiredJakartaAnnotationAndCdiApisWhenLegacyPomDoesNotDeclareThem() {
+    void addsJakartaEe10CompileBaselineWhenLegacyPomReliedOnEapApis() {
         rewriteRun(
             spec -> spec.recipeFromResources("com.jackson.mta.foundation.MigrateJakartaDependencies"),
             pomXml(
@@ -100,38 +91,21 @@ class FoundationRecipeTransformationTest implements RewriteTest {
                     <version>1.0</version>
                     <dependencies>
                         <dependency>
-                            <groupId>jakarta.annotation</groupId>
-                            <artifactId>jakarta.annotation-api</artifactId>
-                            <version>3.0.0</version>
-                        </dependency>
-                        <dependency>
-                            <groupId>jakarta.ejb</groupId>
-                            <artifactId>jakarta.ejb-api</artifactId>
-                            <version>4.0.1</version>
-                            <scope>provided</scope>
-                        </dependency>
-                        <dependency>
-                            <groupId>jakarta.enterprise</groupId>
-                            <artifactId>jakarta.enterprise.cdi-api</artifactId>
-                            <version>4.1.0</version>
-                            <scope>provided</scope>
-                        </dependency>
-                        <dependency>
-                            <groupId>jakarta.faces</groupId>
-                            <artifactId>jakarta.faces-api</artifactId>
-                            <version>4.0.1</version>
+                            <groupId>jakarta.platform</groupId>
+                            <artifactId>jakarta.jakartaee-api</artifactId>
+                            <version>10.0.0</version>
                             <scope>provided</scope>
                         </dependency>
                     </dependencies>
                 </project>
                 """,
-                spec -> spec.afterRecipe(FoundationRecipeTransformationTest::assertJakartaFacesDependency)
+                spec -> spec.afterRecipe(FoundationRecipeTransformationTest::assertJakartaEePlatformDependency)
             )
         );
     }
 
     @Test
-    void addsProvidedJakartaFacesWhenPrimeFacesAppReliedOnContainerProvidedJsf() {
+    void addsJakartaEe10BaselineWhenPrimeFacesAppReliedOnContainerProvidedApis() {
         rewriteRun(
             spec -> spec.recipeFromResources("com.jackson.mta.foundation.MigrateJakartaDependencies"),
             pomXml(
@@ -158,41 +132,148 @@ class FoundationRecipeTransformationTest implements RewriteTest {
                     <version>1.0</version>
                     <dependencies>
                         <dependency>
-                            <groupId>jakarta.annotation</groupId>
-                            <artifactId>jakarta.annotation-api</artifactId>
-                            <version>3.0.0</version>
-                        </dependency>
-                        <dependency>
                             <groupId>org.primefaces</groupId>
                             <artifactId>primefaces</artifactId>
                             <version>6.2</version>
                         </dependency>
                         <dependency>
-                            <groupId>jakarta.ejb</groupId>
-                            <artifactId>jakarta.ejb-api</artifactId>
-                            <version>4.0.1</version>
-                            <scope>provided</scope>
-                        </dependency>
-                        <dependency>
-                            <groupId>jakarta.enterprise</groupId>
-                            <artifactId>jakarta.enterprise.cdi-api</artifactId>
-                            <version>4.1.0</version>
-                            <scope>provided</scope>
-                        </dependency>
-                        <dependency>
-                            <groupId>jakarta.faces</groupId>
-                            <artifactId>jakarta.faces-api</artifactId>
-                            <version>4.0.1</version>
+                            <groupId>jakarta.platform</groupId>
+                            <artifactId>jakarta.jakartaee-api</artifactId>
+                            <version>10.0.0</version>
                             <scope>provided</scope>
                         </dependency>
                     </dependencies>
                 </project>
                 """,
-                spec -> spec.afterRecipe(FoundationRecipeTransformationTest::assertJakartaFacesDependency)
+                spec -> spec.afterRecipe(FoundationRecipeTransformationTest::assertJakartaEePlatformDependency)
             )
         );
     }
 
+    @Test
+    void ensuresJakartaEe10CompileApiWithProvidedScope() {
+        rewriteRun(
+            spec -> spec.recipeFromResources("com.jackson.mta.foundation.EnsureJakartaEe10CompileApi"),
+            pomXml(
+                """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>example</groupId>
+                    <artifactId>container-provided-ee-app</artifactId>
+                    <version>1.0</version>
+                </project>
+                """,
+                """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>example</groupId>
+                    <artifactId>container-provided-ee-app</artifactId>
+                    <version>1.0</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>jakarta.platform</groupId>
+                            <artifactId>jakarta.jakartaee-api</artifactId>
+                            <version>10.0.0</version>
+                            <scope>provided</scope>
+                        </dependency>
+                    </dependencies>
+                </project>
+                """,
+                spec -> spec.afterRecipe(FoundationRecipeTransformationTest::assertJakartaEePlatformDependency)
+            )
+        );
+    }
+
+    @Test
+    void normalizesExistingJakartaEe10CompileApiToProvidedWithoutDuplicate() {
+        rewriteRun(
+            spec -> spec.recipeFromResources("com.jackson.mta.foundation.EnsureJakartaEe10CompileApi"),
+            pomXml(
+                """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>example</groupId>
+                    <artifactId>existing-ee-app</artifactId>
+                    <version>1.0</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>jakarta.platform</groupId>
+                            <artifactId>jakarta.jakartaee-api</artifactId>
+                            <version>10.0.0</version>
+                        </dependency>
+                    </dependencies>
+                </project>
+                """,
+                """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>example</groupId>
+                    <artifactId>existing-ee-app</artifactId>
+                    <version>1.0</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>jakarta.platform</groupId>
+                            <artifactId>jakarta.jakartaee-api</artifactId>
+                            <version>10.0.0</version>
+                            <scope>provided</scope>
+                        </dependency>
+                    </dependencies>
+                </project>
+                """,
+                spec -> spec.afterRecipe(FoundationRecipeTransformationTest::assertJakartaEePlatformDependency)
+            )
+        );
+    }
+
+    @Test
+    void migratesExplicitJavaxServletApiAndAddsJakartaEeCompileBaseline() {
+        rewriteRun(
+            spec -> spec.recipeFromResources("com.jackson.mta.foundation.MigrateJakartaDependencies"),
+            pomXml(
+                """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>example</groupId>
+                    <artifactId>servlet-app</artifactId>
+                    <version>1.0</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>javax.servlet</groupId>
+                            <artifactId>javax.servlet-api</artifactId>
+                            <version>4.0.1</version>
+                        </dependency>
+                    </dependencies>
+                </project>
+                """,
+                """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>example</groupId>
+                    <artifactId>servlet-app</artifactId>
+                    <version>1.0</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>jakarta.platform</groupId>
+                            <artifactId>jakarta.jakartaee-api</artifactId>
+                            <version>10.0.0</version>
+                            <scope>provided</scope>
+                        </dependency>
+                        <dependency>
+                            <groupId>jakarta.servlet</groupId>
+                            <artifactId>jakarta.servlet-api</artifactId>
+                            <version>6.0.0</version>
+                            <scope>provided</scope>
+                        </dependency>
+                    </dependencies>
+                </project>
+                """,
+                spec -> spec.afterRecipe(pom -> {
+                    assertJakartaEePlatformDependency(pom);
+                    assertJakartaServletDependency(pom);
+                })
+            )
+        );
+    }
 
     @Test
     void ensuresJakartaFacesCompileApiWithProvidedScope() {
@@ -370,18 +451,19 @@ class FoundationRecipeTransformationTest implements RewriteTest {
                             <version>16.0.0</version>
                         </dependency>
                         <dependency>
-                            <groupId>jakarta.faces</groupId>
-                            <artifactId>jakarta.faces-api</artifactId>
-                            <version>4.0.1</version>
+                            <groupId>jakarta.platform</groupId>
+                            <artifactId>jakarta.jakartaee-api</artifactId>
+                            <version>10.0.0</version>
                             <scope>provided</scope>
                         </dependency>
                     </dependencies>
                 </project>
                 """,
-                spec -> spec.afterRecipe(FoundationRecipeTransformationTest::assertJakartaFacesDependency)
+                spec -> spec.afterRecipe(FoundationRecipeTransformationTest::assertJakartaEePlatformDependency)
             )
         );
     }
+
     @Test
     void migratesJavaxEjbDependencyToJakartaEjb() {
         rewriteRun(
@@ -398,7 +480,6 @@ class FoundationRecipeTransformationTest implements RewriteTest {
                             <groupId>javax.ejb</groupId>
                             <artifactId>javax.ejb-api</artifactId>
                             <version>3.2.2</version>
-                            <scope>provided</scope>
                         </dependency>
                     </dependencies>
                 </project>
@@ -411,36 +492,83 @@ class FoundationRecipeTransformationTest implements RewriteTest {
                     <version>1.0</version>
                     <dependencies>
                         <dependency>
-                            <groupId>jakarta.annotation</groupId>
-                            <artifactId>jakarta.annotation-api</artifactId>
-                            <version>3.0.0</version>
-                        </dependency>
-                        <dependency>
                             <groupId>jakarta.ejb</groupId>
                             <artifactId>jakarta.ejb-api</artifactId>
                             <version>4.0.1</version>
                             <scope>provided</scope>
                         </dependency>
                         <dependency>
-                            <groupId>jakarta.enterprise</groupId>
-                            <artifactId>jakarta.enterprise.cdi-api</artifactId>
-                            <version>4.1.0</version>
-                            <scope>provided</scope>
-                        </dependency>
-                        <dependency>
-                            <groupId>jakarta.faces</groupId>
-                            <artifactId>jakarta.faces-api</artifactId>
-                            <version>4.0.1</version>
+                            <groupId>jakarta.platform</groupId>
+                            <artifactId>jakarta.jakartaee-api</artifactId>
+                            <version>10.0.0</version>
                             <scope>provided</scope>
                         </dependency>
                     </dependencies>
                 </project>
                 """,
-                spec -> spec.afterRecipe(FoundationRecipeTransformationTest::assertJakartaFacesDependency)
+                spec -> spec.afterRecipe(FoundationRecipeTransformationTest::assertJakartaEePlatformDependency)
             )
         );
     }
 
+    /**
+     * Verifies the EAP migration compile baseline without depending on dependency ordering.
+     *
+     * @param pom rewritten Maven POM
+     */
+    private static void assertJakartaEePlatformDependency(Xml.Document pom) {
+        String xml = pom.printAll();
+        Pattern platformDependency = Pattern.compile(
+                "<dependency>\\s*" +
+                "<groupId>jakarta\\.platform</groupId>\\s*" +
+                "<artifactId>jakarta\\.jakartaee-api</artifactId>" +
+                ".*?</dependency>",
+                Pattern.DOTALL);
+
+        Matcher matcher = platformDependency.matcher(xml);
+        int matches = 0;
+        String dependency = null;
+        while (matcher.find()) {
+            matches++;
+            dependency = matcher.group();
+        }
+
+        assertEquals(1, matches, "Expected exactly one jakarta.platform:jakarta.jakartaee-api dependency");
+        assertTrue(dependency != null && dependency.contains("<version>10.0.0</version>"),
+                "Jakarta EE API must be version 10.0.0");
+        assertTrue(dependency != null && dependency.contains("<scope>provided</scope>"),
+                "Jakarta EE API must use provided scope for the EAP runtime");
+    }
+
+    /**
+     * Verifies an explicitly migrated Servlet API dependency without depending on
+     * its position relative to the Jakarta EE platform compile baseline.
+     *
+     * @param pom rewritten Maven POM
+     */
+    private static void assertJakartaServletDependency(Xml.Document pom) {
+        String xml = pom.printAll();
+        Pattern servletDependency = Pattern.compile(
+                "<dependency>\\s*" +
+                "<groupId>jakarta\\.servlet</groupId>\\s*" +
+                "<artifactId>jakarta\\.servlet-api</artifactId>" +
+                ".*?</dependency>",
+                Pattern.DOTALL);
+
+        Matcher matcher = servletDependency.matcher(xml);
+        int matches = 0;
+        String dependency = null;
+        while (matcher.find()) {
+            matches++;
+            dependency = matcher.group();
+        }
+
+        assertEquals(1, matches, "Expected exactly one jakarta.servlet:jakarta.servlet-api dependency");
+        assertTrue(dependency != null && dependency.contains("<version>6.0.0</version>"),
+                "Jakarta Servlet API must be version 6.0.0");
+        assertTrue(dependency != null && dependency.contains("<scope>provided</scope>"),
+                "Jakarta Servlet API must use provided scope for the EAP runtime");
+    }
 
     /**
      * Verifies the semantic Maven contract required by PrimeFaces 16 without

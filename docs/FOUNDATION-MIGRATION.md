@@ -65,42 +65,41 @@ The recipe preserves explicit managed-bean names. JSF `eager=true`, `@ManagedPro
 The descriptor recipe normalizes common deployment descriptors to the Jakarta EE 10 baseline used by this Workbench: Servlet 6.0 for `web.xml` and Faces 4.0 for `faces-config.xml`. Vendor-specific descriptor semantics remain outside automatic transformation.
 
 
-## Required Jakarta Faces, CDI, and annotation APIs
+## Jakarta EE 10 compile-time API baseline
 
-The `com.jackson.mta.foundation.MigrateJakartaDependencies` recipe is both substitutive and additive.
-In addition to replacing supported legacy `javax.*` Maven coordinates, it guarantees the compile-time
-APIs needed by the migrated source and by PrimeFaces 16:
+The `com.jackson.mta.foundation.MigrateJakartaDependencies` recipe still upgrades supported explicit
+legacy `javax.*` Maven coordinates to their Jakarta counterparts, but v18 no longer tries to infer
+every server-provided API one dependency at a time. It now guarantees one standard Jakarta EE 10
+compile-time baseline:
 
 ```xml
 <dependency>
-    <groupId>jakarta.faces</groupId>
-    <artifactId>jakarta.faces-api</artifactId>
-    <version>4.0.1</version>
-    <scope>provided</scope>
-</dependency>
-<dependency>
-    <groupId>jakarta.annotation</groupId>
-    <artifactId>jakarta.annotation-api</artifactId>
-    <version>3.0.0</version>
-</dependency>
-<dependency>
-    <groupId>jakarta.enterprise</groupId>
-    <artifactId>jakarta.enterprise.cdi-api</artifactId>
-    <version>4.1.0</version>
+    <groupId>jakarta.platform</groupId>
+    <artifactId>jakarta.jakartaee-api</artifactId>
+    <version>10.0.0</version>
     <scope>provided</scope>
 </dependency>
 ```
 
-`EnsureJakartaFacesCompileApi` is also included directly in `UpgradePrimeFacesDependency`. This is
-intentional: the `primefaces-only` profile does not run the FOUNDATION phase, and a legacy application
-may have relied on EAP to provide JSF without declaring `javax.faces-api`. The guard ensures classes
-such as `jakarta.faces.model.DataModel` are resolvable before the Jakarta-only PrimeFaces 16 artifact
-is introduced. Existing Jakarta Faces declarations are normalized to `provided` scope before the
-fallback add runs, avoiding duplicate dependency declarations caused solely by scope differences.
+This is intentionally `provided`: JBoss EAP supplies the Jakarta EE implementations at runtime, while
+Maven and OpenRewrite need the API classes during migration and compilation. The platform API covers
+container-provided APIs including Servlet 6.0, Faces 4.0, Bean Validation, Persistence, REST,
+Transactions, CDI/EJB, XML Binding, JSON, Mail, Activation, and the other Jakarta EE 10 APIs. This
+prevents migrations from failing one package at a time when a legacy EAP application did not declare
+those APIs in its POM.
 
-The CDI API carries Jakarta Inject as a compile dependency, so `jakarta.inject.Named` and
-`jakarta.inject.Inject` are available to the migrated source while the CDI implementation remains
-provided by the target application server.
+Explicit API dependencies that already exist are still migrated to their Jakarta coordinates and
+normalized to `provided` scope. For example, `javax.servlet:javax.servlet-api` becomes
+`jakarta.servlet:jakarta.servlet-api:6.0.0` with `provided` scope. The aggregate platform dependency is
+also present as the migration/build baseline.
+
+`EnsureJakartaEe10CompileApi` is included directly in `UpgradePrimeFacesDependency`. This matters for
+the `primefaces-only` profile, which does not run the FOUNDATION phase: PrimeFaces 16 can still resolve
+Jakarta Faces types such as `jakarta.faces.model.DataModel` before the dependency upgrade is applied.
+
+`EnsureJakartaFacesCompileApi` remains available as a compatibility recipe for callers that explicitly
+want the standalone Faces API, but the Workbench standard migration path now uses the Jakarta EE 10
+platform API to avoid redundant one-off fallback dependencies.
 
 ## Foundation ordering requirement
 

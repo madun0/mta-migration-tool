@@ -111,3 +111,18 @@ Structural verification performed here:
 - Java source delimiters/braces and package layout were inspected after modification.
 
 Maven is not installed in this execution environment, so final release acceptance requires running the focused foundation test and full reactor build on the target workstation.
+
+## v18 verification addendum
+
+- `foundation.yml` parses successfully as eight OpenRewrite YAML recipe documents.
+- `config/migration-catalog.yaml` parses successfully.
+- `FoundationRecipeTransformationTest.java` passes a JDK 21 syntax scan; only expected missing test-classpath errors occur because Maven/OpenRewrite/JUnit dependencies are not installed in this execution environment.
+- v18 changes are limited to the Jakarta EE compile-baseline recipe/configuration, foundation regression tests, and associated documentation/version metadata.
+- Maven test execution remains required in the target build environment:
+
+```bash
+mvn -pl recipes/primefaces-openrewrite-recipes \
+  -Dtest=FoundationRecipeTransformationTest \
+  clean test
+mvn clean install
+```
