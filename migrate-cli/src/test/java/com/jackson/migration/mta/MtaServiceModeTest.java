@@ -41,6 +41,11 @@ class MtaServiceModeTest {
     }
 
     @Test
+    void formatsOneMtaStyleFindingsCount() {
+        assertEquals("MTA findings: 48", MtaService.formatFindingCount(48));
+    }
+
+    @Test
     void sourceOnlyDropsExternalDependencyFindingsWhileFullRetainsThem() throws Exception {
         Path project = Files.createDirectories(temp.resolve("app"));
         Path source = Files.createDirectories(project.resolve("src/main/java/demo")).resolve("Bean.java");

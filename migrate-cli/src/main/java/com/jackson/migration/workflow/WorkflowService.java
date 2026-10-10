@@ -64,9 +64,7 @@ public class WorkflowService {
     public List<MigrationFinding> assess(Path project) throws Exception {
         MigrationConfig config = configs.load(project);
         Path output = project.resolve(".migration/assessment");
-        List<MigrationFinding> findings = mta.assess(project, output, config);
-        System.out.println("Workbench planning findings: " + findings.size());
-        return findings;
+        return mta.assess(project, output, config);
     }
 
     /**

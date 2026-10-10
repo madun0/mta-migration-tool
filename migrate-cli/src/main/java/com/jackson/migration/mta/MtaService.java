@@ -133,18 +133,23 @@ public class MtaService {
         List<MigrationFinding> findings = scopeFindings(parsed, projectRoot, analysisMode);
         int external = parsed.size() - parser.filterToProjectRoot(parsed, projectRoot).size();
         if ("source-only".equals(analysisMode) && external > 0) {
-            System.out.println("MTA source-only scope excluded " + external + " finding(s) outside application root.");
+            System.out.println("MTA source-only scope applied; external dependency incidents were excluded.");
         } else if ("full".equals(analysisMode) && external > 0) {
-            System.out.println("MTA full mode retained " + external + " external dependency finding(s).");
+            System.out.println("MTA full scope applied; external dependency incidents were retained.");
         }
         json.writerWithDefaultPrettyPrinter().writeValue(effectiveOutput.resolve("findings.json").toFile(), findings);
         json.writerWithDefaultPrettyPrinter().writeValue(effectiveOutput.resolve("insights.json").toFile(), insights);
-        System.out.println("MTA actionable findings captured: " + findings.size());
-        System.out.println("MTA insights captured separately: " + insights.size());
+        System.out.println(formatFindingCount(findings.size()));
         if (Files.exists(effectiveOutput.resolve("dependencies.yaml"))) {
             System.out.println("MTA dependency inventory: " + effectiveOutput.resolve("dependencies.yaml"));
         }
         return findings;
+    }
+
+
+    /** Formats the single user-facing assessment findings count. */
+    static String formatFindingCount(int count) {
+        return "MTA findings: " + count;
     }
 
     /**

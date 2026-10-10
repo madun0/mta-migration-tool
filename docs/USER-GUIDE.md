@@ -41,8 +41,12 @@ Outputs:
 ```text
 .migration/assessment/output.yaml
 .migration/assessment/findings.json
+.migration/assessment/insights.json          # diagnostic only, when produced
+.migration/assessment/dependencies.yaml      # dependency inventory, when produced
 .migration/assessment/static-report/
 ```
+
+The normal assessment summary reports one primary count: `MTA findings: <n>`. That value is the normalized MTA violation-incident count used by the planner. Insight and dependency artifacts are intentionally not presented as additional findings totals.
 
 The Workbench passes its bundled `rules/` directory to MTA in addition to the selected EAP 8 target.
 

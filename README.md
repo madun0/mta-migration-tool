@@ -113,3 +113,13 @@ a separate option. The Workbench defaults `analyzeKnownLibraries` to `true` for 
 search is unavailable; dependency classification is then less reliable and may produce more incidents.
 
 The legacy `strictProjectScope` property from v15-v19 is ignored beginning with v20; `mode` is authoritative.
+
+### Findings count
+
+Assessment output intentionally exposes one primary count:
+
+```text
+MTA findings: <n>
+```
+
+This count represents the normalized MTA violation incidents written to `.migration/assessment/findings.json` and used by planning. Insights and dependency inventory remain available as diagnostic artifacts when MTA produces them, but they are not presented as additional findings totals.
