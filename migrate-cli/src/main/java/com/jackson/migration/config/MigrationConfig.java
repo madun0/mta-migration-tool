@@ -1,7 +1,5 @@
 package com.jackson.migration.config;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,12 +28,6 @@ public class MigrationConfig {
      * Configures how the workbench invokes MTA for an application assessment.
      */
     public static class MtaSettings {
-
-        /**
-         * Legacy single target retained for backward compatibility with existing migration.yaml files.
-         * New configurations should use {@link #targets}.
-         */
-        public String target;
 
         /** Native MTA source technologies passed directly to {@code mta-cli analyze --source}. */
         public List<String> sources = new ArrayList<>();
@@ -75,14 +67,6 @@ public class MigrationConfig {
          */
         public boolean disableMavenSearch = false;
 
-        /**
-         * Legacy v15-v19 compatibility field. MTA scope is controlled exclusively by
-         * {@link #mode} beginning with v20. The property is ignored when reading older
-         * migration.yaml files and is not written to newly generated configurations.
-         */
-        @Deprecated
-        @JsonIgnore
-        public boolean strictProjectScope = true;
     }
 
     /**

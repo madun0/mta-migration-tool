@@ -62,10 +62,6 @@ public class MtaService {
 
         Set<String> sources = normalized(config.mta.sources);
         Set<String> targets = normalized(config.mta.targets);
-        // The legacy scalar is only a fallback. Never merge it into an explicit target list.
-        if (targets.isEmpty() && config.mta.target != null && !config.mta.target.isBlank()) {
-            targets.add(config.mta.target.trim());
-        }
 
         validateMtaTechnologyScope(mta, projectRoot, sources, targets);
 

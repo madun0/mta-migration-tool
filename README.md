@@ -112,7 +112,7 @@ a separate option. The Workbench defaults `analyzeKnownLibraries` to `true` for 
 `mavenSettings` is passed directly to MTA as `--maven-settings`. Use `disableMavenSearch: true` only when Maven
 search is unavailable; dependency classification is then less reliable and may produce more incidents.
 
-The legacy `strictProjectScope` property from v15-v19 is ignored beginning with v20; `mode` is authoritative.
+`mta.sources`, `mta.targets`, and `mta.mode` are the only supported MTA scope controls. Legacy scalar `mta.target`, `strictProjectScope`, and Workbench pseudo-selectors are not supported.
 
 ### Findings count
 

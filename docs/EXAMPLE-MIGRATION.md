@@ -24,7 +24,12 @@ Generated `migration.yaml`:
 projectName: customer-portal
 profile: standard
 mta:
-  target: eap8
+  sources:
+    - eap7
+  targets:
+    - eap8
+    - openjdk21
+    - jakarta-ee
   mode: source-only
 validation:
   compileAfterFamily: true

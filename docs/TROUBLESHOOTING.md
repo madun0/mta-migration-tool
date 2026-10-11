@@ -122,5 +122,4 @@ specific settings file, set `mavenSettings`. In disconnected/restricted environm
 index is unavailable, `disableMavenSearch: true` can be used as a fallback, at the cost of less reliable dependency
 classification.
 
-Beginning with v20, `mode` is authoritative and is configured only from `migration.yaml`; the legacy
-`strictProjectScope` property is ignored and there is no CLI mode override.
+MTA `mode` is configured only from `migration.yaml`; there is no CLI mode override. Use only native MTA selectors in `mta.sources` and `mta.targets`.
