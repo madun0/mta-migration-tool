@@ -1,5 +1,6 @@
 package com.jackson.migration.mta;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jackson.migration.config.MigrationConfig;
 import com.jackson.migration.process.CommandResult;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -128,8 +130,9 @@ public class MtaService {
             throw new IOException("MTA analysis completed but did not create " + outputYaml);
         }
 
-        List<MigrationFinding> parsed = parser.parse(outputYaml);
-        List<MigrationFinding> insights = parser.parseInsights(outputYaml);
+        MtaOutputParser.ParsedReport report = parser.parseReport(outputYaml);
+        List<MigrationFinding> parsed = report.findings();
+        List<MigrationFinding> insights = report.insights();
         List<MigrationFinding> findings = scopeFindings(parsed, projectRoot, analysisMode);
         int external = parsed.size() - parser.filterToProjectRoot(parsed, projectRoot).size();
         if ("source-only".equals(analysisMode) && external > 0) {
@@ -139,7 +142,10 @@ public class MtaService {
         }
         json.writerWithDefaultPrettyPrinter().writeValue(effectiveOutput.resolve("findings.json").toFile(), findings);
         json.writerWithDefaultPrettyPrinter().writeValue(effectiveOutput.resolve("insights.json").toFile(), insights);
-        System.out.println(formatFindingCount(findings.size()));
+        json.writerWithDefaultPrettyPrinter().writeValue(
+                effectiveOutput.resolve("assessment-summary.json").toFile(),
+                Map.of("mtaFindings", report.violationIncidentCount()));
+        System.out.println(formatFindingCount(report.violationIncidentCount()));
         if (Files.exists(effectiveOutput.resolve("dependencies.yaml"))) {
             System.out.println("MTA dependency inventory: " + effectiveOutput.resolve("dependencies.yaml"));
         }
@@ -150,6 +156,20 @@ public class MtaService {
     /** Formats the single user-facing assessment findings count. */
     static String formatFindingCount(int count) {
         return "MTA findings: " + count;
+    }
+
+    /**
+     * Returns the MTA report's raw violation-incident count for an existing assessment directory.
+     * A persisted summary is preferred; older assessments transparently fall back to output.yaml.
+     */
+    public int loadReportedIncidentCount(Path output) throws IOException {
+        Path summary = output.resolve("assessment-summary.json");
+        if (Files.exists(summary)) {
+            JsonNode node = json.readTree(summary.toFile());
+            JsonNode count = node.get("mtaFindings");
+            if (count != null && count.canConvertToInt()) return count.intValue();
+        }
+        return parser.parseReport(output.resolve("output.yaml")).violationIncidentCount();
     }
 
     /**

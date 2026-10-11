@@ -145,10 +145,24 @@ public class ReportService {
     public void writeFinal(Path project, MigrationState state, List<MigrationFinding> before,
                            List<MigrationFinding> after, Map<String, List<String>> automaticResiduals,
                            Map<String, List<String>> reviewResiduals, boolean testsRun) throws IOException {
+        writeFinal(project, state, before, after, before.size(), after.size(),
+                automaticResiduals, reviewResiduals, testsRun);
+    }
+
+    /**
+     * Writes the final report using MTA's raw violation-incident counts for the headline finding
+     * totals while retaining normalized Workbench findings for residual classification/details.
+     */
+    public void writeFinal(Path project, MigrationState state, List<MigrationFinding> before,
+                           List<MigrationFinding> after, int beforeIncidentCount, int afterIncidentCount,
+                           Map<String, List<String>> automaticResiduals,
+                           Map<String, List<String>> reviewResiduals, boolean testsRun) throws IOException {
         StringBuilder out = new StringBuilder("# Migration Report\n\n")
                 .append("Status: **").append(state.status).append("**\n\n")
-                .append("Baseline MTA findings: **").append(before.size()).append("**  \n")
-                .append("Final MTA findings: **").append(after.size()).append("**\n\n")
+                .append("Baseline MTA findings: **").append(beforeIncidentCount).append("**  \n")
+                .append("Final MTA findings: **").append(afterIncidentCount).append("**\n\n")
+                .append("MTA finding totals above are raw violation-incident counts from the MTA reports; ")
+                .append("the detailed finding list is normalized for Workbench planning.\n\n")
                 .append("## Verification summary\n\n")
                 .append("- Compilation: **PASS**\n")
                 .append("- Tests: **").append(testsRun ? "PASS" : "SKIPPED").append("**\n")
@@ -157,7 +171,7 @@ public class ReportService {
                 .append("- Assisted/manual residual families: **")
                 .append(reviewResiduals.size()).append("**\n")
                 .append("- Remaining MTA findings: **")
-                .append(after.size()).append("**\n\n");
+                .append(afterIncidentCount).append("**\n\n");
 
         appendResidualSection(out, "Blocking automatic migration residuals", automaticResiduals);
         appendResidualSection(out, "Outstanding assisted/manual review residuals", reviewResiduals);

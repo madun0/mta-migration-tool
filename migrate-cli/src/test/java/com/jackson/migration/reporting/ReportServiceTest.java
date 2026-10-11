@@ -82,4 +82,23 @@ class ReportServiceTest {
         assertTrue(report.contains("## Families that required manual review during migration"));
         assertFalse(report.contains("## Manual review families"));
     }
+    @Test
+    void rendersHeadlineMtaCountsFromRawIncidentTotals() throws Exception {
+        com.jackson.migration.workflow.MigrationState state = new com.jackson.migration.workflow.MigrationState();
+        state.status = "VERIFIED";
+
+        var before = java.util.List.of(
+                new com.jackson.migration.mta.MigrationFinding("rule-a", "message", "file", 1, "mandatory"));
+        var after = java.util.List.<com.jackson.migration.mta.MigrationFinding>of();
+
+        new ReportService().writeFinal(
+                project, state, before, after, 12, 3,
+                java.util.Map.of(), java.util.Map.of(), true);
+
+        String report = Files.readString(project.resolve(".migration/MIGRATION-REPORT.md"));
+        assertTrue(report.contains("Baseline MTA findings: **12**"));
+        assertTrue(report.contains("Final MTA findings: **3**"));
+        assertTrue(report.contains("Remaining MTA findings: **3**"));
+    }
+
 }

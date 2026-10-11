@@ -46,7 +46,7 @@ Outputs:
 .migration/assessment/static-report/
 ```
 
-The normal assessment summary reports one primary count: `MTA findings: <n>`. That value is the normalized MTA violation-incident count used by the planner. Insight and dependency artifacts are intentionally not presented as additional findings totals.
+The normal assessment summary reports one primary count: `MTA findings: <n>`. That value is the raw number of incidents reported under MTA violation rules. The planner still uses a deduplicated normalized findings list internally. Insight and dependency artifacts are intentionally not presented as additional findings totals.
 
 The Workbench passes its bundled `rules/` directory to MTA in addition to the selected EAP 8 target.
 

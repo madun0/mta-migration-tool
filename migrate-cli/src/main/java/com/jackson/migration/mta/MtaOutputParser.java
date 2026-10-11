@@ -59,11 +59,7 @@ public class MtaOutputParser {
      * @throws IOException if the report exists but cannot be parsed
      */
     public List<MigrationFinding> parse(Path outputYaml) throws IOException {
-        if (!Files.exists(outputYaml)) return List.of();
-        JsonNode root = yaml.readTree(outputYaml.toFile());
-        List<MigrationFinding> findings = new ArrayList<>();
-        scan(root, findings, new HashSet<>());
-        return filterGeneratedFindings(findings);
+        return parseReport(outputYaml).findings();
     }
 
     /**
@@ -71,11 +67,65 @@ public class MtaOutputParser {
      * context but are deliberately not fed into Workbench planning/residual classification.
      */
     public List<MigrationFinding> parseInsights(Path outputYaml) throws IOException {
-        if (!Files.exists(outputYaml)) return List.of();
+        return parseReport(outputYaml).insights();
+    }
+
+    /**
+     * Parses one MTA report once and returns both normalized Workbench data and the raw MTA
+     * violation-incident count.
+     *
+     * <p>The user-facing {@code MTA findings} number is deliberately the number of entries under
+     * {@code violations.<rule>.incidents[]} in the MTA report. Normalized findings remain
+     * deduplicated for planning, so their list size is not used as the MTA report count.</p>
+     *
+     * @param outputYaml path to MTA {@code output.yaml}
+     * @return parsed report data; empty when the report does not exist
+     * @throws IOException if the report exists but cannot be parsed
+     */
+    public ParsedReport parseReport(Path outputYaml) throws IOException {
+        if (!Files.exists(outputYaml)) return new ParsedReport(List.of(), List.of(), 0);
         JsonNode root = yaml.readTree(outputYaml.toFile());
+
+        List<MigrationFinding> findings = new ArrayList<>();
+        scan(root, findings, new HashSet<>());
+
         List<MigrationFinding> insights = new ArrayList<>();
         scanInsights(root, insights, new HashSet<>());
-        return filterGeneratedFindings(insights);
+
+        return new ParsedReport(
+                List.copyOf(filterGeneratedFindings(findings)),
+                List.copyOf(filterGeneratedFindings(insights)),
+                countViolationIncidents(root));
+    }
+
+    /** Parsed MTA report data used by assessment without reparsing a potentially large YAML file. */
+    public record ParsedReport(
+            List<MigrationFinding> findings,
+            List<MigrationFinding> insights,
+            int violationIncidentCount) {
+    }
+
+    /** Counts raw MTA violation incidents recursively across all application/report sections. */
+    private int countViolationIncidents(JsonNode node) {
+        if (node == null) return 0;
+        int count = 0;
+        if (node.isObject()) {
+            JsonNode violations = node.get("violations");
+            if (violations != null && violations.isObject()) {
+                for (Map.Entry<String, JsonNode> entry : violations.properties()) {
+                    JsonNode incidents = entry.getValue().get("incidents");
+                    if (incidents != null && incidents.isArray()) count += incidents.size();
+                }
+            }
+            for (Map.Entry<String, JsonNode> field : node.properties()) {
+                if (!"violations".equals(field.getKey())) {
+                    count += countViolationIncidents(field.getValue());
+                }
+            }
+        } else if (node.isArray()) {
+            for (JsonNode child : node) count += countViolationIncidents(child);
+        }
+        return count;
     }
 
     /** Recursively extracts entries beneath MTA's insights maps. */

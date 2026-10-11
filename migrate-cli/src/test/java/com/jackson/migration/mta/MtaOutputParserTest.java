@@ -197,6 +197,47 @@ class MtaOutputParserTest {
         assertEquals(List.of("migration-rule"), findings.stream().map(MigrationFinding::ruleId).toList());
         assertEquals(List.of("javaee-technology-usage-00020-jakarta"), insights.stream().map(MigrationFinding::ruleId).toList());
         assertEquals("insight", insights.get(0).category());
+        assertEquals(1, parser.parseReport(report).violationIncidentCount());
+    }
+
+    @Test
+    void reportsRawViolationIncidentCountEvenWhenPlanningFindingsAreDeduplicated() throws Exception {
+        Path report = temp.resolve("incident-count-output.yaml");
+        Files.writeString(report, """
+                - name: app-one
+                  violations:
+                    rule-a:
+                      category: mandatory
+                      incidents:
+                        - uri: file:///workspace/src/main/java/demo/A.java
+                          lineNumber: 10
+                          message: duplicate incident
+                        - uri: file:///workspace/src/main/java/demo/A.java
+                          lineNumber: 10
+                          message: duplicate incident
+                        - uri: file:///workspace/src/main/java/demo/B.java
+                          lineNumber: 20
+                          message: another incident
+                    rule-b:
+                      category: potential
+                      incidents:
+                        - uri: file:///workspace/src/main/java/demo/C.java
+                          lineNumber: 30
+                          message: third incident
+                - name: app-two
+                  violations:
+                    rule-c:
+                      category: mandatory
+                      incidents:
+                        - uri: file:///workspace/src/main/java/demo/D.java
+                          lineNumber: 40
+                          message: fourth incident
+                """);
+
+        MtaOutputParser.ParsedReport parsed = new MtaOutputParser().parseReport(report);
+
+        assertEquals(5, parsed.violationIncidentCount());
+        assertEquals(4, parsed.findings().size());
     }
 
 }

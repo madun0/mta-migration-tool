@@ -91,4 +91,15 @@ class MtaServiceModeTest {
         assertTrue(values.contains("jakarta-ee"));
     }
 
+    @Test
+    void loadsPersistedMtaIncidentCountWithoutUsingNormalizedFindingSize() throws Exception {
+        Path output = Files.createDirectories(temp.resolve("assessment"));
+        Files.writeString(output.resolve("assessment-summary.json"), "{\"mtaFindings\": 73}\n");
+
+        MtaService service = new MtaService();
+        service.parser = new MtaOutputParser();
+
+        assertEquals(73, service.loadReportedIncidentCount(output));
+    }
+
 }

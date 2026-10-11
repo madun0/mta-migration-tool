@@ -275,8 +275,12 @@ public class WorkflowService {
             }
         }
 
-        List<MigrationFinding> before = mta.loadFindings(project, project.resolve(".migration/assessment"), config);
-        List<MigrationFinding> after = mta.assess(project, project.resolve(".migration/verification"), config);
+        Path assessmentOutput = project.resolve(".migration/assessment");
+        Path verificationOutput = project.resolve(".migration/verification");
+        List<MigrationFinding> before = mta.loadFindings(project, assessmentOutput, config);
+        int beforeIncidentCount = mta.loadReportedIncidentCount(assessmentOutput);
+        List<MigrationFinding> after = mta.assess(project, verificationOutput, config);
+        int afterIncidentCount = mta.loadReportedIncidentCount(verificationOutput);
 
         FindingResidualClassifier.Result findingResiduals = FindingResidualClassifier.classify(catalog, after);
         mergeResiduals(automaticResiduals, findingResiduals.automatic());
@@ -302,7 +306,8 @@ public class WorkflowService {
         }
 
         states.save(project, state);
-        reports.writeFinal(project, state, before, after, automaticResiduals, reviewResiduals, config.validation.runTestsOnVerify);
+        reports.writeFinal(project, state, before, after, beforeIncidentCount, afterIncidentCount,
+                automaticResiduals, reviewResiduals, config.validation.runTestsOnVerify);
         System.out.println("Verification status: " + state.status);
         System.out.println("Verification complete. Report: " + project.resolve(".migration/MIGRATION-REPORT.md"));
 

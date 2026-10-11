@@ -122,4 +122,4 @@ Assessment output intentionally exposes one primary count:
 MTA findings: <n>
 ```
 
-This count represents the normalized MTA violation incidents written to `.migration/assessment/findings.json` and used by planning. Insights and dependency inventory remain available as diagnostic artifacts when MTA produces them, but they are not presented as additional findings totals.
+This count represents the raw number of incidents in MTA `output.yaml` under `violations.<rule>.incidents[]`, matching the report-oriented MTA view. `.migration/assessment/findings.json` remains a deduplicated, normalized planning artifact and may contain fewer entries. Insights and dependency inventory remain available as diagnostic artifacts when MTA produces them, but they are not presented as additional findings totals.
