@@ -1,10 +1,9 @@
 package com.jackson.migration.cli;
 
-import com.jackson.migration.util.PathResolver;
+import com.jackson.migration.util.ProjectDirectory;
 import com.jackson.migration.workflow.WorkflowService;
 import jakarta.inject.Inject;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
 
 import java.util.concurrent.Callable;
 
@@ -14,12 +13,8 @@ import java.util.concurrent.Callable;
 @Command(name = "init", description = "Create migration.yaml and initialize the workbench directory.")
 public class InitCommand implements Callable<Integer> {
 
-    /** Project directory to initialize. */
-    @Option(names = "--project", defaultValue = ".")
-    String project;
-
     @Inject
-    PathResolver paths;
+    ProjectDirectory projectDirectory;
 
     @Inject
     WorkflowService workflow;
@@ -32,7 +27,7 @@ public class InitCommand implements Callable<Integer> {
     @Override
     public Integer call() {
         try {
-            workflow.init(paths.resolve(project));
+            workflow.init(projectDirectory.current());
             return 0;
         } catch (Exception e) {
             System.err.println(e.getMessage());

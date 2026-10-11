@@ -1,6 +1,6 @@
 package com.jackson.migration.cli;
 
-import com.jackson.migration.util.PathResolver;
+import com.jackson.migration.util.ProjectDirectory;
 import com.jackson.migration.workflow.WorkflowService;
 import jakarta.inject.Inject;
 import picocli.CommandLine.Command;
@@ -17,10 +17,6 @@ import java.util.concurrent.Callable;
 @Command(name = "migrate", description = "Execute the migration plan with checkpoints and per-family validation.")
 public class MigrateCommand implements Callable<Integer> {
 
-    /** Project directory to migrate. */
-    @Option(names = "--project", defaultValue = ".")
-    String project;
-
     /** Optional phase name to execute exclusively. */
     @Option(names = "--phase")
     String phase;
@@ -30,7 +26,7 @@ public class MigrateCommand implements Callable<Integer> {
     String family;
 
     @Inject
-    PathResolver paths;
+    ProjectDirectory projectDirectory;
 
     @Inject
     WorkflowService workflow;
@@ -43,7 +39,7 @@ public class MigrateCommand implements Callable<Integer> {
     @Override
     public Integer call() {
         try {
-            workflow.migrate(paths.resolve(project), phase, family);
+            workflow.migrate(projectDirectory.current(), phase, family);
             return 0;
         } catch (Exception e) {
             System.err.println(e.getMessage());

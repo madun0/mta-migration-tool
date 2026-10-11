@@ -1,10 +1,9 @@
 package com.jackson.migration.cli;
 
-import com.jackson.migration.util.PathResolver;
+import com.jackson.migration.util.ProjectDirectory;
 import com.jackson.migration.validation.DoctorService;
 import jakarta.inject.Inject;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
 
 import java.util.concurrent.Callable;
 
@@ -17,12 +16,8 @@ import java.util.concurrent.Callable;
 @Command(name = "doctor", description = "Validate the Windows/Git Bash migration environment.")
 public class DoctorCommand implements Callable<Integer> {
 
-    /** Project directory whose toolchain and repository state should be checked. */
-    @Option(names = "--project", defaultValue = ".")
-    String project;
-
     @Inject
-    PathResolver paths;
+    ProjectDirectory projectDirectory;
 
     @Inject
     DoctorService doctor;
@@ -34,6 +29,6 @@ public class DoctorCommand implements Callable<Integer> {
      */
     @Override
     public Integer call() {
-        return doctor.run(paths.resolve(project)) ? 0 : 2;
+        return doctor.run(projectDirectory.current()) ? 0 : 2;
     }
 }

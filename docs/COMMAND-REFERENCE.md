@@ -16,7 +16,14 @@
 | `migrate verify` | Compile/test, scan residual patterns, rerun MTA and write the final report. |
 | `migrate report` | Print the current report artifact locations. |
 
-All commands accept `--project <path>` where applicable. Git Bash paths such as `/c/work/app` are supported on Windows.
+All commands operate on the **current working directory**. Run `migrate` from the root of the application being migrated.
+
+```bash
+cd /c/work/app
+migrate assess
+```
+
+The CLI does not expose a project-path option.
 
 
 ## `verify` result semantics

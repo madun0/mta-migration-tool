@@ -31,6 +31,8 @@ The Workbench is intentionally thin:
 
 No MTA Hub, WSL, Docker/Podman, database, REST API, or web UI is required.
 
+All Workbench commands operate on the current working directory. `cd` to the target application root before running `migrate`; there is no project-path CLI option.
+
 ## Build the Workbench
 
 From Git Bash in the Workbench root:

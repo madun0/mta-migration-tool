@@ -1,10 +1,9 @@
 package com.jackson.migration.cli;
 
-import com.jackson.migration.util.PathResolver;
+import com.jackson.migration.util.ProjectDirectory;
 import com.jackson.migration.workflow.WorkflowService;
 import jakarta.inject.Inject;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
 
 import java.util.concurrent.Callable;
 
@@ -14,12 +13,8 @@ import java.util.concurrent.Callable;
 @Command(name = "resume", description = "Continue from the next unfinished migration family.")
 public class ResumeCommand implements Callable<Integer> {
 
-    /** Project directory whose migration should be resumed. */
-    @Option(names = "--project", defaultValue = ".")
-    String project;
-
     @Inject
-    PathResolver paths;
+    ProjectDirectory projectDirectory;
 
     @Inject
     WorkflowService workflow;
@@ -33,7 +28,7 @@ public class ResumeCommand implements Callable<Integer> {
     @Override
     public Integer call() {
         try {
-            workflow.resume(paths.resolve(project));
+            workflow.resume(projectDirectory.current());
             return 0;
         } catch (Exception e) {
             System.err.println(e.getMessage());

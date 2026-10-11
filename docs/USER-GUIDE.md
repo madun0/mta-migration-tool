@@ -10,10 +10,14 @@ export PATH="$PWD/bin:$PATH"
 
 ## 2. Initialize a target application
 
+All Workbench commands operate on the current working directory. Change into the application root first:
+
 ```bash
 cd /c/src/customer-portal
 migrate init
 ```
+
+There is no `--project` option.
 
 Edit `migration.yaml` if required. Commit it before running migration:
 

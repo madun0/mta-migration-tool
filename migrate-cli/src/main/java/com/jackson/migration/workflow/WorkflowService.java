@@ -51,7 +51,7 @@ public class WorkflowService {
         excludeMigrationDirectory(project);
         System.out.println("Created migration.yaml");
         System.out.println("Added .migration/ to .git/info/exclude when available.");
-        System.out.println("Review migration.yaml, commit it, then run: migrate doctor --project .");
+        System.out.println("Review migration.yaml, commit it, then run: migrate doctor");
     }
 
     /**
@@ -221,7 +221,7 @@ public class WorkflowService {
         Files.deleteIfExists(migration.resolve("TODO.md"));
 
         System.out.println("Migration run state cleared for current Git HEAD " + abbreviate(git.head(project)) + ".");
-        System.out.println("migration.yaml was preserved. Run: migrate assess --project . && migrate plan --project . && migrate migrate --project .");
+        System.out.println("migration.yaml was preserved. Run: migrate assess && migrate plan && migrate migrate");
     }
 
     /** Deletes a Workbench-owned directory tree when it exists. */
@@ -358,7 +358,7 @@ public class WorkflowService {
                 "Git HEAD changed since this migration run started (baseline "
                         + abbreviate(state.baselineGitHead) + ", current " + abbreviate(currentHead) + "). "
                         + "Existing checkpointed state cannot be rebound safely. "
-                        + "To start a fresh migration from the current commit, run 'migrate restart --project .'. "
+                        + "To start a fresh migration from the current commit, run 'migrate restart'. "
                         + "To resume or rollback this run, restore the repository to the baseline commit first.");
     }
 

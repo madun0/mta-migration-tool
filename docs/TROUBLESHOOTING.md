@@ -53,15 +53,20 @@ For a target application, the Workbench selects Maven according to the JVM host 
 
 ## Windows assessment includes `.m2` or unrelated directories
 
-The Workbench treats the selected `--project` directory as a hard application boundary. On Windows, Git Bash path aliases, Maven dependency discovery, parent POM resolution, and filesystem junctions can expose paths outside the application while MTA builds analysis context.
+The Workbench treats the **current working directory** as the application boundary. Before running any command, change into the application root:
+
+```bash
+cd /c/work/showcase
+migrate assess
+```
 
 Current Workbench behavior is:
 
-1. normalize Git Bash paths such as `/c/work/app`;
-2. canonicalize the application root with `Path.toRealPath()`;
+1. resolve the current working directory as the application root;
+2. canonicalize that root with `Path.toRealPath()` before MTA analysis;
 3. launch MTA from an isolated temporary working directory instead of the application parent;
-4. retain only normalized findings whose file belongs to the canonical application root; and
-5. discard generated/build/dependency metadata paths such as `.migration/`, `target/`, `.git/`, and `.m2/repository/`.
+4. in `source-only` mode, retain normalized findings only for files inside the canonical application root; and
+5. always discard Workbench/build metadata paths such as `.migration/`, `target/`, and `.git/`.
 
 The assessment log prints the effective root:
 
@@ -70,13 +75,7 @@ MTA application root: C:\work\showcase
 MTA execution directory: C:\Users\...\Temp\mta-workbench-...
 ```
 
-If the first path is broader than the application itself, rerun the command with an explicit project root, for example:
-
-```bash
-migrate assess --project /c/work/showcase
-```
-
-MTA may still read Maven repository artifacts internally for dependency/type information. Those external paths are analyzer context and are not allowed into Workbench `findings.json`.
+If the application root is wrong, stop the command, `cd` to the intended project root, and run `migrate assess` again. In `full` mode, MTA may intentionally inspect and report dependency paths outside the application root.
 
 ## Git HEAD changed since migration started
 
@@ -87,10 +86,10 @@ Once a checkpoint exists, rebinding would make rollback unsafe and is refused.
 For a deliberate fresh run from the current commit:
 
 ```bash
-migrate restart --project .
-migrate assess --project .
-migrate plan --project .
-migrate migrate --project .
+migrate restart
+migrate assess
+migrate plan
+migrate migrate
 ```
 
 `restart` preserves `migration.yaml` but removes prior Workbench run state, checkpoints, assessment/verification output, plan and generated reports. It requires a clean application working tree.

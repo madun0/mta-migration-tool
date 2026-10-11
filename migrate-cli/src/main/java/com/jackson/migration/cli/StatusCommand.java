@@ -1,10 +1,9 @@
 package com.jackson.migration.cli;
 
-import com.jackson.migration.util.PathResolver;
+import com.jackson.migration.util.ProjectDirectory;
 import com.jackson.migration.workflow.StateStore;
 import jakarta.inject.Inject;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
 
 import java.util.concurrent.Callable;
 
@@ -14,12 +13,8 @@ import java.util.concurrent.Callable;
 @Command(name = "status", description = "Show migration state and the current/next work item.")
 public class StatusCommand implements Callable<Integer> {
 
-    /** Project directory whose migration state should be displayed. */
-    @Option(names = "--project", defaultValue = ".")
-    String project;
-
     @Inject
-    PathResolver paths;
+    ProjectDirectory projectDirectory;
 
     @Inject
     StateStore states;
@@ -32,7 +27,7 @@ public class StatusCommand implements Callable<Integer> {
     @Override
     public Integer call() {
         try {
-            var stored = states.load(paths.resolve(project));
+            var stored = states.load(projectDirectory.current());
             if (stored.isEmpty()) {
                 System.out.println("No migration state exists.");
                 return 0;

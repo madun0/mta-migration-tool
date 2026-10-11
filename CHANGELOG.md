@@ -1,5 +1,17 @@
 # Changelog
 
+## v27
+
+- Removed the unnecessary CLI regression test that prohibited `--project` from being reintroduced.
+- No production CLI behavior changed; commands continue to operate on the current working directory.
+
+## v26
+
+- Removed the `--project` option from every CLI command.
+- All commands now operate exclusively on the current working directory.
+- Removed Git Bash project-path translation because project paths are no longer accepted as CLI input.
+- Updated command guidance, restart messages, troubleshooting, and user documentation to use `cd <application-root>` followed by `migrate ...`.
+
 ## v25
 
 - Removed all legacy MTA configuration compatibility. `mta.target` and `strictProjectScope` are no longer part of the configuration model.
