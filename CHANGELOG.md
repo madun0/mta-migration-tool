@@ -1,5 +1,13 @@
 # Changelog
 
+## SNAPSHOT MTA verification isolation
+
+- Fixed `migrate verify` re-analyzing `.migration/assessment/output.yaml` and other Workbench-generated artifacts during its post-migration MTA pass.
+- MTA now runs with `.migration` temporarily moved outside the application root and writes its report to an external staging directory; Workbench restores `.migration` and copies only the requested fresh assessment/verification report back afterward.
+- This keeps both normalized residual classification and the raw `MTA findings` incident count free of historical report snippets.
+- Added regression coverage proving Workbench state is hidden/restored safely and that staged MTA output replaces only the requested assessment/verification subdirectory.
+- Kept the OpenRewrite recipe artifact coordinate at `com.jackson.mta:primefaces-openrewrite-recipes:1.0.0-SNAPSHOT`.
+
 ## SNAPSHOT descriptor follow-up
 
 - Fixed `MigrateJakartaDescriptors` schema-location replacement so existing `xsi:schemaLocation` values are replaced exactly once instead of being duplicated by the zero-length terminal match produced by `(?s).*`.

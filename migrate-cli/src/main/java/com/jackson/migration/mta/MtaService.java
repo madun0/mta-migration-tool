@@ -43,8 +43,10 @@ public class MtaService {
      * <p>The application root is canonicalized with {@link Path#toRealPath()} before MTA starts.
      * MTA is launched from an isolated temporary working directory rather than the application's
      * parent directory. This is particularly important on Windows, where Maven/provider discovery
-     * can otherwise observe unrelated sibling directories. MTA itself remains authoritative for the scope selected by {@code migration.yaml}; the Workbench
-     * does not apply a second path filter after analysis.</p>
+     * can otherwise observe unrelated sibling directories. Workbench-owned {@code .migration}
+     * state is temporarily moved outside the application root while MTA runs so previous
+     * {@code output.yaml} reports and checkpoints cannot be rediscovered as application source.
+     * MTA remains authoritative for the source/dependency scope selected by {@code migration.yaml}.</p>
      *
      * @param project application project root to analyze
      * @param output directory where MTA output and Workbench artifacts are stored
@@ -57,17 +59,17 @@ public class MtaService {
         Path projectRoot = canonicalProjectRoot(project);
         Path effectiveOutput = resolveOutputPath(project, projectRoot, output);
         Path mta = tools.mta().orElseThrow(() -> new IllegalStateException("mta-cli executable not found. Set MTA_CLI or add it to PATH."));
-        Files.createDirectories(effectiveOutput);
 
         Set<String> sources = normalized(config.mta.sources);
         Set<String> targets = normalized(config.mta.targets);
 
         validateMtaTechnologyScope(mta, projectRoot, sources, targets);
 
+        Path analysisOutput = Files.createTempDirectory("mta-workbench-output-").toRealPath();
         List<String> command = new ArrayList<>(List.of(
                 mta.toString(), "analyze",
                 "--input", projectRoot.toString(),
-                "--output", effectiveOutput.toString(),
+                "--output", analysisOutput.toString(),
                 "--overwrite"
         ));
 
@@ -108,6 +110,8 @@ public class MtaService {
         Path executionDirectory = Files.createTempDirectory("mta-workbench-").toRealPath();
         System.out.println("MTA application root: " + projectRoot);
         System.out.println("MTA execution directory: " + executionDirectory);
+        System.out.println("MTA report staging directory: " + analysisOutput);
+        System.out.println("MTA persisted output: " + effectiveOutput);
         System.out.println("MTA scope: sources=" + sources + ", targets=" + targets);
         System.out.println("MTA analysis mode: " + analysisMode + " (from migration.yaml)");
         System.out.println("MTA analyze known libraries: " + analyzeKnownLibraries);
@@ -116,39 +120,119 @@ public class MtaService {
         System.out.println("MTA custom ruleset: " + customRuleset);
         System.out.println("MTA command: " + formatCommand(command));
 
-        CommandResult result;
         try {
-            result = runner.runStreaming(executionDirectory, command);
+            CommandResult result;
+            try (HiddenWorkbenchState ignored = hideWorkbenchState(projectRoot)) {
+                result = runner.runStreaming(executionDirectory, command);
+            } finally {
+                deleteQuietly(executionDirectory);
+            }
+            if (!result.success()) throw new IOException("MTA analysis failed with exit code " + result.exitCode());
+
+            Path stagedOutputYaml = analysisOutput.resolve("output.yaml");
+            if (!Files.exists(stagedOutputYaml)) {
+                throw new IOException("MTA analysis completed but did not create " + stagedOutputYaml);
+            }
+
+            replaceDirectory(analysisOutput, effectiveOutput);
+            Path outputYaml = effectiveOutput.resolve("output.yaml");
+            MtaOutputParser.ParsedReport report = parser.parseReport(outputYaml);
+            List<MigrationFinding> incidents = report.incidents();
+            List<MigrationFinding> planningFindings = report.planningFindings();
+            List<MigrationFinding> insights = report.insights();
+
+            // MTA is authoritative for source-only versus full scope. findings.json mirrors the
+            // violation incidents in output.yaml one-for-one; Workbench-only cleanup/deduplication is
+            // persisted separately for planning and residual classification.
+            json.writerWithDefaultPrettyPrinter().writeValue(effectiveOutput.resolve("findings.json").toFile(), incidents);
+            json.writerWithDefaultPrettyPrinter().writeValue(
+                    effectiveOutput.resolve("planning-findings.json").toFile(), planningFindings);
+            json.writerWithDefaultPrettyPrinter().writeValue(effectiveOutput.resolve("insights.json").toFile(), insights);
+            json.writerWithDefaultPrettyPrinter().writeValue(
+                    effectiveOutput.resolve("assessment-summary.json").toFile(),
+                    Map.of("mtaFindings", incidents.size()));
+            System.out.println(formatFindingCount(incidents.size()));
+            if (Files.exists(effectiveOutput.resolve("dependencies.yaml"))) {
+                System.out.println("MTA dependency inventory: " + effectiveOutput.resolve("dependencies.yaml"));
+            }
+            return planningFindings;
         } finally {
-            deleteQuietly(executionDirectory);
+            deleteQuietly(analysisOutput);
         }
-        if (!result.success()) throw new IOException("MTA analysis failed with exit code " + result.exitCode());
+    }
 
-        Path outputYaml = effectiveOutput.resolve("output.yaml");
-        if (!Files.exists(outputYaml)) {
-            throw new IOException("MTA analysis completed but did not create " + outputYaml);
+
+    /**
+     * Temporarily moves Workbench-owned state outside the application root so MTA cannot analyze
+     * its own previous reports, findings, checkpoints, or migration metadata as application source.
+     * The state is restored automatically when the returned guard is closed.
+     */
+    static HiddenWorkbenchState hideWorkbenchState(Path projectRoot) throws IOException {
+        Path migrationDirectory = projectRoot.resolve(".migration");
+        if (!Files.exists(migrationDirectory)) {
+            return new HiddenWorkbenchState(migrationDirectory, null);
         }
 
-        MtaOutputParser.ParsedReport report = parser.parseReport(outputYaml);
-        List<MigrationFinding> incidents = report.incidents();
-        List<MigrationFinding> planningFindings = report.planningFindings();
-        List<MigrationFinding> insights = report.insights();
+        Path hiddenDirectory = projectRoot.resolveSibling(
+                "." + projectRoot.getFileName() + "-mta-workbench-state-" + java.util.UUID.randomUUID());
+        Files.move(migrationDirectory, hiddenDirectory);
+        return new HiddenWorkbenchState(migrationDirectory, hiddenDirectory);
+    }
 
-        // MTA is authoritative for source-only versus full scope. findings.json mirrors the
-        // violation incidents in output.yaml one-for-one; Workbench-only cleanup/deduplication is
-        // persisted separately for planning and residual classification.
-        json.writerWithDefaultPrettyPrinter().writeValue(effectiveOutput.resolve("findings.json").toFile(), incidents);
-        json.writerWithDefaultPrettyPrinter().writeValue(
-                effectiveOutput.resolve("planning-findings.json").toFile(), planningFindings);
-        json.writerWithDefaultPrettyPrinter().writeValue(effectiveOutput.resolve("insights.json").toFile(), insights);
-        json.writerWithDefaultPrettyPrinter().writeValue(
-                effectiveOutput.resolve("assessment-summary.json").toFile(),
-                Map.of("mtaFindings", incidents.size()));
-        System.out.println(formatFindingCount(incidents.size()));
-        if (Files.exists(effectiveOutput.resolve("dependencies.yaml"))) {
-            System.out.println("MTA dependency inventory: " + effectiveOutput.resolve("dependencies.yaml"));
+    /** Restores a temporarily hidden Workbench state directory. */
+    static final class HiddenWorkbenchState implements AutoCloseable {
+        private final Path originalDirectory;
+        private final Path hiddenDirectory;
+        private boolean restored;
+
+        HiddenWorkbenchState(Path originalDirectory, Path hiddenDirectory) {
+            this.originalDirectory = originalDirectory;
+            this.hiddenDirectory = hiddenDirectory;
         }
-        return planningFindings;
+
+        @Override
+        public void close() throws IOException {
+            if (restored || hiddenDirectory == null || !Files.exists(hiddenDirectory)) {
+                restored = true;
+                return;
+            }
+            if (Files.exists(originalDirectory)) {
+                throw new IOException("Cannot restore Workbench state because the application recreated "
+                        + originalDirectory + " while MTA was running.");
+            }
+            Files.move(hiddenDirectory, originalDirectory);
+            restored = true;
+        }
+    }
+
+    /** Replaces a persisted MTA output directory with the contents of an isolated staging directory. */
+    static void replaceDirectory(Path source, Path target) throws IOException {
+        deleteTree(target);
+        Files.createDirectories(target);
+        try (var paths = Files.walk(source)) {
+            for (Path path : paths.toList()) {
+                Path relative = source.relativize(path);
+                if (relative.toString().isEmpty()) continue;
+                Path destination = target.resolve(relative);
+                if (Files.isDirectory(path)) {
+                    Files.createDirectories(destination);
+                } else {
+                    Path parent = destination.getParent();
+                    if (parent != null) Files.createDirectories(parent);
+                    Files.copy(path, destination, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+        }
+    }
+
+    /** Deletes a directory tree and propagates failures when replacement must be reliable. */
+    private static void deleteTree(Path root) throws IOException {
+        if (root == null || !Files.exists(root)) return;
+        try (var paths = Files.walk(root)) {
+            for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+                Files.deleteIfExists(path);
+            }
+        }
     }
 
 

@@ -119,6 +119,8 @@ search is unavailable; dependency classification is then less reliable and may p
 
 `mta.sources`, `mta.targets`, and `mta.mode` are the only supported MTA scope controls. Legacy scalar `mta.target`, `strictProjectScope`, and Workbench pseudo-selectors are not supported.
 
+Workbench-generated state is not part of the application analysis surface. Before invoking `mta-cli analyze`, the Workbench temporarily moves `.migration` outside the application root and directs MTA output to an external staging directory. After MTA completes, `.migration` is restored and the fresh report is copied into `.migration/assessment` or `.migration/verification`. This prevents a verification run from treating historical `output.yaml`, `findings.json`, checkpoints, or reports as application source.
+
 ### Findings count
 
 Assessment output intentionally exposes one primary count:

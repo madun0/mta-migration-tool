@@ -7,7 +7,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Verifies canonical MTA application-root and output-path handling. */
 class MtaServicePathTest {
@@ -36,5 +38,42 @@ class MtaServicePathTest {
         assertEquals(
                 canonical.resolve(".migration/assessment"),
                 MtaService.resolveOutputPath(original, canonical, output));
+    }
+
+    @Test
+    void workbenchStateIsHiddenDuringMtaAnalysisAndRestoredAfterward() throws Exception {
+        Path project = Files.createDirectories(temp.resolve("workspace/verify-app"));
+        Path migration = Files.createDirectories(project.resolve(".migration/assessment"));
+        Path outputYaml = migration.resolve("output.yaml");
+        Files.writeString(outputYaml, "historical assessment");
+
+        try (MtaService.HiddenWorkbenchState ignored = MtaService.hideWorkbenchState(project)) {
+            assertFalse(Files.exists(project.resolve(".migration")));
+            assertTrue(Files.exists(project.getParent()));
+        }
+
+        assertTrue(Files.exists(outputYaml));
+        assertEquals("historical assessment", Files.readString(outputYaml));
+    }
+
+    @Test
+    void stagedMtaOutputReplacesOnlyRequestedOutputDirectory() throws Exception {
+        Path project = Files.createDirectories(temp.resolve("workspace/output-app"));
+        Path migration = Files.createDirectories(project.resolve(".migration"));
+        Path assessment = Files.createDirectories(migration.resolve("assessment"));
+        Files.writeString(assessment.resolve("stale.txt"), "stale");
+        Files.writeString(migration.resolve("state.json"), "keep");
+
+        Path staged = Files.createDirectories(temp.resolve("staged-output"));
+        Files.writeString(staged.resolve("output.yaml"), "fresh");
+        Path report = Files.createDirectories(staged.resolve("static-report"));
+        Files.writeString(report.resolve("index.html"), "report");
+
+        MtaService.replaceDirectory(staged, assessment);
+
+        assertFalse(Files.exists(assessment.resolve("stale.txt")));
+        assertEquals("fresh", Files.readString(assessment.resolve("output.yaml")));
+        assertEquals("report", Files.readString(assessment.resolve("static-report/index.html")));
+        assertEquals("keep", Files.readString(migration.resolve("state.json")));
     }
 }
