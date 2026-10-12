@@ -1,3 +1,10 @@
+## SNAPSHOT - persisted MTA report links
+
+- Rebased MTA's user-facing static-report and `analysis.log` links from the temporary staging directory to the durable `.migration/assessment` or `.migration/verification` directory while output is streamed.
+- Rewrites staging-directory references embedded in persisted textual MTA report assets after they are copied from staging.
+- Prints canonical persisted static-report and analysis-log URIs after the report is installed.
+- Added regression coverage for console-link rebasing and persisted report/log path rebasing.
+
 ## SNAPSHOT - generated build-output restore + execution timers
 
 - Fixed MTA analysis cleanup when Maven/MTA recreates `target/` while the original build output is temporarily hidden. The transient replacement is now deleted and the original build tree is restored.

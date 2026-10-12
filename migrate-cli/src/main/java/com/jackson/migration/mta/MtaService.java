@@ -14,6 +14,7 @@ import jakarta.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
 /**
@@ -129,7 +131,9 @@ public class MtaService {
             try {
                 try (HiddenWorkbenchState ignored = hideWorkbenchState(projectRoot);
                      HiddenGeneratedDirectories ignoredBuildOutput = hideGeneratedDirectories(projectRoot)) {
-                    result = runner.runStreaming(executionDirectory, command);
+                    UnaryOperator<String> outputRebaser =
+                            line -> rebaseStagingReferences(line, analysisOutput, effectiveOutput);
+                    result = runner.runStreaming(executionDirectory, command, outputRebaser);
                 }
             } finally {
                 deleteQuietly(executionDirectory);
@@ -143,6 +147,8 @@ public class MtaService {
             }
 
             replaceDirectory(analysisOutput, effectiveOutput);
+            rebasePersistedOutputReferences(effectiveOutput, analysisOutput, effectiveOutput);
+            printPersistedReportLocations(effectiveOutput);
             Path outputYaml = effectiveOutput.resolve("output.yaml");
             MtaOutputParser.ParsedReport report = parser.parseReport(outputYaml);
             List<MigrationFinding> incidents = report.incidents();
@@ -336,6 +342,96 @@ public class MtaService {
         }
     }
 
+
+    /**
+     * Rewrites an internal MTA staging-directory reference to the final persisted output path.
+     *
+     * <p>MTA prints absolute links to {@code static-report/index.html} and {@code analysis.log}
+     * while it is still writing into Workbench's temporary staging directory. The same staging
+     * root can also be embedded in textual report assets. Those paths are implementation details
+     * and become invalid as soon as the staging directory is deleted, so every user-facing
+     * reference is rebased to the persisted assessment/verification directory.</p>
+     */
+    static String rebaseStagingReferences(String value, Path stagingRoot, Path persistedRoot) {
+        if (value == null || value.isEmpty() || stagingRoot == null || persistedRoot == null) return value;
+
+        String staging = stagingRoot.toAbsolutePath().normalize().toString();
+        String persisted = persistedRoot.toAbsolutePath().normalize().toString();
+        String rebased = value;
+
+        // File URIs preserve spaces/Windows drive letters correctly and are what MTA commonly
+        // prints for clickable static-report links.
+        rebased = rebased.replace(directoryUri(stagingRoot), directoryUri(persistedRoot));
+
+        // Native paths cover analysis.log lines and other plain filesystem references.
+        rebased = rebased.replace(staging, persisted);
+
+        // Some generated HTML/JSON uses slash-normalized paths even on Windows.
+        rebased = rebased.replace(staging.replace('\\', '/'), persisted.replace('\\', '/'));
+
+        // JSON/JavaScript strings may escape Windows backslashes.
+        rebased = rebased.replace(staging.replace("\\", "\\\\"), persisted.replace("\\", "\\\\"));
+
+        return rebased;
+    }
+
+    /** Returns a file URI suitable for use as a directory prefix even before the directory exists. */
+    private static String directoryUri(Path directory) {
+        String uri = directory.toAbsolutePath().normalize().toUri().toString();
+        return uri.endsWith("/") ? uri : uri + "/";
+    }
+
+    /**
+     * Rewrites absolute staging references embedded in persisted MTA text/report assets.
+     */
+    static void rebasePersistedOutputReferences(Path outputRoot, Path stagingRoot, Path persistedRoot)
+            throws IOException {
+        if (outputRoot == null || !Files.exists(outputRoot)) return;
+
+        try (var paths = Files.walk(outputRoot)) {
+            for (Path file : paths.filter(Files::isRegularFile).toList()) {
+                if (!isTextReportAsset(file)) continue;
+                String original = Files.readString(file, StandardCharsets.UTF_8);
+                String rebased = rebaseStagingReferences(original, stagingRoot, persistedRoot);
+                if (!original.equals(rebased)) {
+                    Files.writeString(file, rebased, StandardCharsets.UTF_8);
+                }
+            }
+        }
+    }
+
+    /** Returns whether a persisted MTA artifact is safe/useful to rewrite as UTF-8 text. */
+    private static boolean isTextReportAsset(Path file) {
+        String name = file.getFileName() == null
+                ? ""
+                : file.getFileName().toString().toLowerCase(Locale.ROOT);
+        return name.endsWith(".html")
+                || name.endsWith(".htm")
+                || name.endsWith(".js")
+                || name.endsWith(".json")
+                || name.endsWith(".yaml")
+                || name.endsWith(".yml")
+                || name.endsWith(".txt")
+                || name.endsWith(".log")
+                || name.endsWith(".md")
+                || name.endsWith(".css")
+                || name.endsWith(".xml")
+                || name.endsWith(".properties")
+                || name.endsWith(".csv")
+                || name.endsWith(".map");
+    }
+
+    /** Prints canonical, durable locations after staged MTA output has been persisted. */
+    private static void printPersistedReportLocations(Path effectiveOutput) {
+        Path staticReport = effectiveOutput.resolve("static-report").resolve("index.html");
+        Path analysisLog = effectiveOutput.resolve("analysis.log");
+        if (Files.exists(staticReport)) {
+            System.out.println("MTA static report: " + staticReport.toAbsolutePath().normalize().toUri());
+        }
+        if (Files.exists(analysisLog)) {
+            System.out.println("MTA analysis log: " + analysisLog.toAbsolutePath().normalize().toUri());
+        }
+    }
 
     /** Formats the single user-facing assessment findings count. */
     static String formatFindingCount(int count) {

@@ -136,6 +136,8 @@ This count represents the raw number of incidents in MTA `output.yaml` under `vi
 
 During `assess` and `verify`, the Workbench temporarily moves `.migration` and every Maven `target/` directory outside the application tree before invoking MTA. This prevents historical reports and generated descriptor copies from being evaluated as migration source. The directories are restored immediately after MTA exits.
 
+MTA writes into an external staging directory during analysis, but that staging path is not part of the public report contract. Console links for the static HTML report and `analysis.log` are rebased while they are streamed, and textual report assets are rebased again after persistence. Durable links therefore point to `.migration/assessment` or `.migration/verification`, never the temporary `mta-workbench-output-*` directory.
+
 
 
 ### Execution timing

@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 /**
  * Executes external tools without shell command concatenation, preserving
@@ -59,6 +60,28 @@ public class CommandRunner {
     }
 
     /**
+     * Executes an external command while streaming output through a line transformer.
+     *
+     * <p>This is useful when a tool must operate in an internal staging directory but user-facing
+     * output should expose the final persisted location instead. The transformed line is used for
+     * both console output and the returned captured output.</p>
+     *
+     * @param workingDirectory process working directory
+     * @param command executable followed by arguments
+     * @param lineTransformer transformation applied to each output line before capture/printing
+     * @return captured process result
+     * @throws IOException if the process cannot be started or read
+     * @throws InterruptedException if execution is interrupted
+     */
+    public CommandResult runStreaming(
+            Path workingDirectory,
+            List<String> command,
+            UnaryOperator<String> lineTransformer)
+            throws IOException, InterruptedException {
+        return run(workingDirectory, command, Map.of(), true, lineTransformer);
+    }
+
+    /**
      * Executes an external process with optional environment overrides and console
      * streaming.
      *
@@ -82,8 +105,31 @@ public class CommandRunner {
             Map<String, String> environment,
             boolean stream)
             throws IOException, InterruptedException {
+        return run(workingDirectory, command, environment, stream, UnaryOperator.identity());
+    }
+
+    /**
+     * Executes an external process with optional output-line transformation.
+     *
+     * @param workingDirectory requested process working directory
+     * @param command executable followed by arguments
+     * @param environment environment variables to add or override
+     * @param stream whether transformed output should be written to the console
+     * @param lineTransformer transformation applied to every combined stdout/stderr line
+     * @return captured process result including duration
+     * @throws IOException if the process cannot be started or read
+     * @throws InterruptedException if execution is interrupted
+     */
+    public CommandResult run(
+            Path workingDirectory,
+            List<String> command,
+            Map<String, String> environment,
+            boolean stream,
+            UnaryOperator<String> lineTransformer)
+            throws IOException, InterruptedException {
 
         Instant start = Instant.now();
+        UnaryOperator<String> transformer = lineTransformer == null ? UnaryOperator.identity() : lineTransformer;
 
         Path requestedWorkingDirectory =
                 workingDirectory.toAbsolutePath().normalize();
@@ -113,11 +159,14 @@ public class CommandRunner {
             String line;
 
             while ((line = reader.readLine()) != null) {
-                output.append(line)
+                String renderedLine = transformer.apply(line);
+                if (renderedLine == null) renderedLine = line;
+
+                output.append(renderedLine)
                         .append(System.lineSeparator());
 
                 if (stream) {
-                    System.out.println(line);
+                    System.out.println(renderedLine);
                 }
             }
         }

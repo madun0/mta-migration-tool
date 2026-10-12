@@ -96,6 +96,49 @@ class MtaServicePathTest {
         assertFalse(Files.exists(project.resolve("target/mta-generated/transient.txt")));
     }
 
+
+    @Test
+    void stagingReferencesAreRebasedToPersistedVerificationDirectory() throws Exception {
+        Path staging = Files.createDirectories(temp.resolve("mta-workbench-output-123"));
+        Path persisted = temp.resolve("workspace/app/.migration/verification").toAbsolutePath().normalize();
+
+        String uriLine = "Static report: " + staging.toUri() + "static-report/index.html";
+        String pathLine = "Analysis log: " + staging.resolve("analysis.log");
+
+        String rebasedUri = MtaService.rebaseStagingReferences(uriLine, staging, persisted);
+        String rebasedPath = MtaService.rebaseStagingReferences(pathLine, staging, persisted);
+
+        assertFalse(rebasedUri.contains(staging.toString()));
+        assertFalse(rebasedPath.contains(staging.toString()));
+        assertTrue(rebasedUri.contains(persisted.toUri().toString()));
+        assertTrue(rebasedUri.contains("/static-report/index.html"));
+        assertTrue(rebasedPath.contains(persisted.toString()));
+    }
+
+    @Test
+    void persistedStaticReportAndAnalysisLogDoNotRetainStagingPaths() throws Exception {
+        Path staging = Files.createDirectories(temp.resolve("mta-workbench-output-456"));
+        Path persisted = Files.createDirectories(temp.resolve("workspace/app/.migration/verification"));
+        Path report = Files.createDirectories(persisted.resolve("static-report"));
+
+        Files.writeString(
+                report.resolve("index.html"),
+                "<a href=\"" + staging.toUri() + "analysis.log\">analysis log</a>");
+        Files.writeString(
+                persisted.resolve("analysis.log"),
+                "output directory=" + staging.toAbsolutePath().normalize());
+
+        MtaService.rebasePersistedOutputReferences(persisted, staging, persisted);
+
+        String html = Files.readString(report.resolve("index.html"));
+        String log = Files.readString(persisted.resolve("analysis.log"));
+        assertFalse(html.contains(staging.toString()));
+        assertFalse(html.contains(staging.toUri().toString()));
+        assertFalse(log.contains(staging.toString()));
+        assertTrue(html.contains(persisted.toUri().toString()));
+        assertTrue(log.contains(persisted.toString()));
+    }
+
     @Test
     void stagedMtaOutputReplacesOnlyRequestedOutputDirectory() throws Exception {
         Path project = Files.createDirectories(temp.resolve("workspace/output-app"));
