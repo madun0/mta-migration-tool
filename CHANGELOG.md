@@ -1,3 +1,11 @@
+## SNAPSHOT - comprehensive web.xml javax migration
+
+- Expanded `jakarta-descriptors` beyond `servlet-class`, `filter-class`, `listener-class`, and Faces context parameters so Jakarta EE-owned `javax.*` references anywhere in `web.xml` are migrated to `jakarta.*`.
+- Uses a curated Jakarta EE package allowlist instead of a blanket `javax.` replacement; Java SE namespaces such as `javax.sql`, `javax.crypto`, `javax.naming`, `javax.transaction.xa`, and `javax.annotation.processing` remain unchanged.
+- Added descriptor-scoped verification that reports remaining Jakarta EE `javax.*` references in `web.xml`, `faces-config.xml`, `beans.xml`, and `persistence.xml` while ignoring generated `target/` and Workbench output.
+- Added regression coverage for broad `web.xml` class/type migration, Java SE exclusions, and generated descriptor copies.
+- Kept the recipe artifact coordinate at `com.jackson.mta:primefaces-openrewrite-recipes:1.0.0-SNAPSHOT`.
+
 ## SNAPSHOT - persisted MTA report links
 
 - Rebased MTA's user-facing static-report and `analysis.log` links from the temporary staging directory to the durable `.migration/assessment` or `.migration/verification` directory while output is streamed.

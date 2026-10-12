@@ -11,6 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Runs Maven compile/test gates and scans source files for forbidden legacy patterns after transformations.
@@ -20,6 +22,18 @@ public class ValidationService {
     @Inject MavenService maven;
 
     private static final Set<String> TEXT_EXTENSIONS = Set.of(".java", ".xml", ".xhtml", ".js", ".properties", ".yaml", ".yml");
+
+    /**
+     * Jakarta EE-owned {@code javax.*} namespaces that must move to {@code jakarta.*} when they are
+     * embedded in Jakarta EE deployment descriptors. The pattern deliberately excludes Java SE
+     * namespaces such as {@code javax.sql}, {@code javax.crypto}, {@code javax.naming},
+     * {@code javax.transaction.xa}, and {@code javax.annotation.processing}.
+     */
+    private static final Pattern LEGACY_JAKARTA_DESCRIPTOR_REFERENCE = Pattern.compile(
+            "\\bjavax\\.(activation|annotation(?!\\.processing\\b)|batch|decorator|ejb|el|enterprise|faces|inject|interceptor|jms|json|jws|mail|persistence|resource|security\\.enterprise|servlet|transaction(?!\\.xa\\b)|validation|websocket|ws\\.rs|xml\\.(?:bind|soap|ws))(?=[.$A-Za-z0-9_])");
+
+    private static final Set<String> JAKARTA_DESCRIPTOR_FILES = Set.of(
+            "web.xml", "faces-config.xml", "beans.xml", "persistence.xml");
 
     /**
      * Runs the target application's Maven compile gate.
@@ -59,12 +73,57 @@ public class ValidationService {
         if (patterns == null || patterns.isEmpty()) return result;
         try (var stream = Files.walk(project)) {
             stream.filter(Files::isRegularFile)
-                    .filter(path -> !path.toString().contains(".git") && !path.toString().contains(".migration") && !path.toString().contains("target"))
+                    .filter(path -> !isGeneratedOrWorkbenchPath(path))
                     .filter(this::isText)
                     .forEach(path -> scan(path, project, patterns, result));
         }
         result.success = result.errors.isEmpty();
         return result;
+    }
+
+
+    /**
+     * Scans Jakarta EE deployment descriptors for legacy API references that should have moved from
+     * {@code javax.*} to {@code jakarta.*}. This is intentionally descriptor-scoped so legitimate
+     * Java SE references such as {@code javax.sql.DataSource} are not reported.
+     *
+     * @param project application project root
+     * @return validation result containing every legacy Jakarta EE reference found in supported descriptors
+     * @throws IOException if the project tree cannot be traversed
+     */
+    public ValidationResult jakartaDescriptorReferences(Path project) throws IOException {
+        ValidationResult result = new ValidationResult();
+        try (var stream = Files.walk(project)) {
+            stream.filter(Files::isRegularFile)
+                    .filter(path -> !isGeneratedOrWorkbenchPath(path))
+                    .filter(path -> JAKARTA_DESCRIPTOR_FILES.contains(path.getFileName().toString().toLowerCase()))
+                    .forEach(path -> scanJakartaDescriptorReferences(path, project, result));
+        }
+        result.success = result.errors.isEmpty();
+        return result;
+    }
+
+    private boolean isGeneratedOrWorkbenchPath(Path path) {
+        String normalized = path.toString().replace('\\', '/');
+        return normalized.contains("/.git/")
+                || normalized.contains("/.migration/")
+                || normalized.contains("/target/")
+                || normalized.contains("/build/");
+    }
+
+    private void scanJakartaDescriptorReferences(Path file, Path project, ValidationResult result) {
+        try {
+            List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
+            for (int i = 0; i < lines.size(); i++) {
+                Matcher matcher = LEGACY_JAKARTA_DESCRIPTOR_REFERENCE.matcher(lines.get(i));
+                while (matcher.find()) {
+                    result.errors.add(project.relativize(file) + ":" + (i + 1)
+                            + " contains legacy Jakarta EE descriptor reference " + matcher.group());
+                }
+            }
+        } catch (IOException ignored) {
+            result.warnings.add("Could not scan " + file);
+        }
     }
 
     private boolean isText(Path path) {

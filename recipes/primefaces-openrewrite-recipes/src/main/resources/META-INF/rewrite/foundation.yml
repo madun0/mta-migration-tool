@@ -361,6 +361,20 @@ recipeList:
       newValue: "jakarta.faces.$1"
       regex: true
 
+  # web.xml can embed Jakarta EE API class/type names in many elements beyond servlet-class/filter-class/listener-class
+  # (for example exception-type, res-type, resource-env-ref-type, injection-target-class, handler-class, EJB interface
+  # types, and vendor extension values). Perform the broad value migration last and scope it to web.xml only. The
+  # allowlist deliberately excludes Java SE namespaces such as javax.sql, javax.crypto, javax.net, javax.naming,
+  # javax.transaction.xa, and javax.annotation.processing. Removed javax.faces.bean APIs are also not renamed into a
+  # non-existent jakarta.faces.bean package; those remain visible as residuals for the managed-bean migration family.
+  - org.openrewrite.text.FindAndReplace:
+      find: '\bjavax\.(activation|annotation(?!\.processing\b)|batch|decorator|ejb|el|enterprise|faces(?!\.bean\b)|inject|interceptor|jms|json|jws|mail|persistence|resource|security\.enterprise|servlet|transaction(?!\.xa\b)|validation|websocket|ws\.rs|xml\.(?:bind|soap|ws))(?=[.$A-Za-z0-9_])'
+      replace: 'jakarta.$1'
+      regex: true
+      caseSensitive: true
+      filePattern: '**/web.xml'
+      plaintextOnly: false
+
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: com.jackson.mta.foundation.MigrateFacesManagedBeans

@@ -281,6 +281,12 @@ public class WorkflowService {
             if (spec == null || spec.forbiddenPatterns == null || spec.forbiddenPatterns.isEmpty()) continue;
 
             ValidationResult familyResidual = validation.forbiddenPatterns(project, spec.forbiddenPatterns);
+            if ("jakarta-descriptors".equals(family)) {
+                ValidationResult descriptorReferences = validation.jakartaDescriptorReferences(project);
+                familyResidual.errors.addAll(descriptorReferences.errors);
+                familyResidual.warnings.addAll(descriptorReferences.warnings);
+                familyResidual.success = familyResidual.errors.isEmpty();
+            }
             if (familyResidual.success) continue;
 
             if ("AUTOMATIC".equalsIgnoreCase(spec.automation)) {

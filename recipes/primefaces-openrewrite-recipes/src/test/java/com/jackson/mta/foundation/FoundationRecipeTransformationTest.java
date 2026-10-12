@@ -724,6 +724,88 @@ class FoundationRecipeTransformationTest implements RewriteTest {
     }
 
     @Test
+    void migratesJakartaEeReferencesAnywhereInWebXmlButPreservesJavaSeJavaxNamespaces() {
+        rewriteRun(
+            spec -> spec.recipeFromResources("com.jackson.mta.foundation.MigrateJakartaDescriptors"),
+            xml(
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+                         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+                         version="6.0">
+                    <error-page>
+                        <exception-type>javax.servlet.ServletException</exception-type>
+                        <location>/error.xhtml</location>
+                    </error-page>
+                    <resource-env-ref>
+                        <resource-env-ref-name>jms/Orders</resource-env-ref-name>
+                        <resource-env-ref-type>javax.jms.Queue</resource-env-ref-type>
+                    </resource-env-ref>
+                    <resource-ref>
+                        <res-ref-name>jdbc/Main</res-ref-name>
+                        <res-type>javax.sql.DataSource</res-type>
+                    </resource-ref>
+                    <env-entry>
+                        <env-entry-name>validatorType</env-entry-name>
+                        <env-entry-type>javax.validation.Validator</env-entry-type>
+                    </env-entry>
+                    <env-entry>
+                        <env-entry-name>xaType</env-entry-name>
+                        <env-entry-type>javax.transaction.xa.XAResource</env-entry-type>
+                    </env-entry>
+                    <context-param>
+                        <param-name>custom.provider</param-name>
+                        <param-value>javax.xml.bind.JAXBContext</param-value>
+                    </context-param>
+                    <context-param>
+                        <param-name>processor</param-name>
+                        <param-value>javax.annotation.processing.Processor</param-value>
+                    </context-param>
+                </web-app>
+                """,
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+                         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+                         version="6.0">
+                    <error-page>
+                        <exception-type>jakarta.servlet.ServletException</exception-type>
+                        <location>/error.xhtml</location>
+                    </error-page>
+                    <resource-env-ref>
+                        <resource-env-ref-name>jms/Orders</resource-env-ref-name>
+                        <resource-env-ref-type>jakarta.jms.Queue</resource-env-ref-type>
+                    </resource-env-ref>
+                    <resource-ref>
+                        <res-ref-name>jdbc/Main</res-ref-name>
+                        <res-type>javax.sql.DataSource</res-type>
+                    </resource-ref>
+                    <env-entry>
+                        <env-entry-name>validatorType</env-entry-name>
+                        <env-entry-type>jakarta.validation.Validator</env-entry-type>
+                    </env-entry>
+                    <env-entry>
+                        <env-entry-name>xaType</env-entry-name>
+                        <env-entry-type>javax.transaction.xa.XAResource</env-entry-type>
+                    </env-entry>
+                    <context-param>
+                        <param-name>custom.provider</param-name>
+                        <param-value>jakarta.xml.bind.JAXBContext</param-value>
+                    </context-param>
+                    <context-param>
+                        <param-name>processor</param-name>
+                        <param-value>javax.annotation.processing.Processor</param-value>
+                    </context-param>
+                </web-app>
+                """,
+                source -> source.path("src/main/webapp/WEB-INF/web.xml")
+            )
+        );
+    }
+
+    @Test
     void migratesPersistenceDescriptorToJakartaPersistenceThreeOne() {
         rewriteRun(
             spec -> spec.recipeFromResources("com.jackson.mta.foundation.MigrateJakartaDescriptors"),

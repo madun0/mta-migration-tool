@@ -62,7 +62,7 @@ The recipe preserves explicit managed-bean names. JSF `eager=true`, `@ManagedPro
 
 ### Descriptor targets
 
-The descriptor recipe is always scheduled and normalizes common deployment descriptors to the Jakarta EE 10 baseline used by this Workbench: Servlet 6.0 for `web.xml`, Jakarta Faces 4.0 for `faces-config.xml`, CDI 4.0 for `beans.xml`, and Jakarta Persistence 3.1 for `persistence.xml`. It recognizes both legacy `http://java.sun.com/xml/ns/javaee` and `http://xmlns.jcp.org/xml/ns/javaee` namespaces. Existing `bean-discovery-mode` values are preserved because CDI 4.0 changed default discovery behavior; discovery semantics remain a developer-review item. Vendor-specific descriptor semantics remain outside automatic transformation.
+The descriptor recipe is always scheduled and normalizes common deployment descriptors to the Jakarta EE 10 baseline used by this Workbench: Servlet 6.0 for `web.xml`, Jakarta Faces 4.0 for `faces-config.xml`, CDI 4.0 for `beans.xml`, and Jakarta Persistence 3.1 for `persistence.xml`. It recognizes both legacy `http://java.sun.com/xml/ns/javaee` and `http://xmlns.jcp.org/xml/ns/javaee` namespaces. In `web.xml`, Jakarta EE-owned `javax.*` API references are migrated wherever they occur, not only in `servlet-class`, `filter-class`, and `listener-class`. The rewrite uses a curated package allowlist so Java SE namespaces such as `javax.sql`, `javax.crypto`, `javax.naming`, `javax.transaction.xa`, and `javax.annotation.processing` remain unchanged. Existing `bean-discovery-mode` values are preserved because CDI 4.0 changed default discovery behavior; discovery semantics remain a developer-review item. Vendor-specific descriptor semantics remain outside automatic transformation.
 
 
 ## Jakarta EE 10 compile-time API baseline
