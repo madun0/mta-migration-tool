@@ -162,13 +162,24 @@ families:
     guide: docs/FOUNDATION-MIGRATION.md
     forbiddenPatterns:
     - http://xmlns.jcp.org/xml/ns/javaee
+    - http://java.sun.com/xml/ns/javaee
     - web-app_3_1.xsd
+    - web-app_4_0.xsd
+    - web-facesconfig_2_1.xsd
     - web-facesconfig_2_2.xsd
+    - web-facesconfig_2_3.xsd
+    - beans_1_0.xsd
+    - beans_1_1.xsd
+    - beans_2_0.xsd
+    - beans_3_0.xsd
     - http://xmlns.jcp.org/xml/ns/persistence
     - persistence_2_1.xsd
-    always: false
+    - persistence_2_2.xsd
+    - persistence_3_0.xsd
+    always: true
     reviewChecklist:
-    - Validate web.xml against the Servlet 6.0 schema and faces-config.xml against the Faces 4.0 schema.
+    - Validate web.xml against Servlet 6.0, faces-config.xml against Jakarta Faces 4.0, and beans.xml against CDI 4.0.
+    - Review beans.xml bean-discovery-mode semantics because CDI 4.0 defaults differ from older CDI deployments.
     - Review descriptor entries that reference application or vendor-specific classes before changing package names.
     compileAfterApply: false
   faces-compatibility:

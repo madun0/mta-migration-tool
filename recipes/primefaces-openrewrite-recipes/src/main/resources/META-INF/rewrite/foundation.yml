@@ -215,13 +215,21 @@ type: specs.openrewrite.org/v1beta/recipe
 name: com.jackson.mta.foundation.MigrateJakartaDescriptors
 displayName: Migrate Java EE deployment descriptors to Jakarta EE 10 schemas
 description: >-
-  Normalizes common web.xml and faces-config.xml namespaces, schema locations, versions, and javax-prefixed container class references.
+  Normalizes common web.xml, faces-config.xml, beans.xml, and persistence.xml namespaces, schema locations,
+  versions, and javax-prefixed container class references for the Jakarta EE 10 baseline.
 recipeList:
+  # Servlet 6.0 / web.xml. Support both Java EE 6/7-era java.sun.com and Java EE 7/8-era xmlns.jcp.org namespaces.
   - org.openrewrite.xml.ChangeTagAttribute:
       elementName: //web-app
       attributeName: xmlns
       newValue: https://jakarta.ee/xml/ns/jakartaee
       oldValue: http://xmlns.jcp.org/xml/ns/javaee
+      regex: false
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: //web-app
+      attributeName: xmlns
+      newValue: https://jakarta.ee/xml/ns/jakartaee
+      oldValue: http://java.sun.com/xml/ns/javaee
       regex: false
   - org.openrewrite.xml.ChangeTagAttribute:
       elementName: //web-app
@@ -229,12 +237,18 @@ recipeList:
       newValue: "6.0"
       oldValue: null
       regex: false
+  - org.openrewrite.xml.AddTagAttribute:
+      elementName: //web-app
+      attributeName: version
+      newValue: "6.0"
   - org.openrewrite.xml.ChangeTagAttribute:
       elementName: //web-app
       attributeName: xsi:schemaLocation
       newValue: https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd
       oldValue: ".*web-app_[0-9_]+\\.xsd.*"
       regex: true
+
+  # Jakarta Faces 4.0 / faces-config.xml.
   - org.openrewrite.xml.ChangeTagAttribute:
       elementName: //faces-config
       attributeName: xmlns
@@ -243,16 +257,58 @@ recipeList:
       regex: false
   - org.openrewrite.xml.ChangeTagAttribute:
       elementName: //faces-config
+      attributeName: xmlns
+      newValue: https://jakarta.ee/xml/ns/jakartaee
+      oldValue: http://java.sun.com/xml/ns/javaee
+      regex: false
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: //faces-config
       attributeName: version
       newValue: "4.0"
       oldValue: null
       regex: false
+  - org.openrewrite.xml.AddTagAttribute:
+      elementName: //faces-config
+      attributeName: version
+      newValue: "4.0"
   - org.openrewrite.xml.ChangeTagAttribute:
       elementName: //faces-config
       attributeName: xsi:schemaLocation
       newValue: https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-facesconfig_4_0.xsd
       oldValue: ".*web-facesconfig_[0-9_]+\\.xsd.*"
       regex: true
+
+  # CDI 4.0 / beans.xml. Deliberately preserve bean-discovery-mode because CDI 4 changes default discovery semantics.
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: //beans
+      attributeName: xmlns
+      newValue: https://jakarta.ee/xml/ns/jakartaee
+      oldValue: http://xmlns.jcp.org/xml/ns/javaee
+      regex: false
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: //beans
+      attributeName: xmlns
+      newValue: https://jakarta.ee/xml/ns/jakartaee
+      oldValue: http://java.sun.com/xml/ns/javaee
+      regex: false
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: //beans
+      attributeName: version
+      newValue: "4.0"
+      oldValue: null
+      regex: false
+  - org.openrewrite.xml.AddTagAttribute:
+      elementName: //beans
+      attributeName: version
+      newValue: "4.0"
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: //beans
+      attributeName: xsi:schemaLocation
+      newValue: https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/beans_4_0.xsd
+      oldValue: ".*beans_[0-9_]+\\.xsd.*"
+      regex: true
+
+  # Jakarta Persistence 3.1 is the Jakarta EE 10 persistence descriptor baseline.
   - org.openrewrite.xml.ChangeTagAttribute:
       elementName: //persistence
       attributeName: xmlns
@@ -262,15 +318,21 @@ recipeList:
   - org.openrewrite.xml.ChangeTagAttribute:
       elementName: //persistence
       attributeName: version
-      newValue: "3.0"
+      newValue: "3.1"
       oldValue: null
       regex: false
+  - org.openrewrite.xml.AddTagAttribute:
+      elementName: //persistence
+      attributeName: version
+      newValue: "3.1"
   - org.openrewrite.xml.ChangeTagAttribute:
       elementName: //persistence
       attributeName: xsi:schemaLocation
-      newValue: https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd
+      newValue: https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_1.xsd
       oldValue: ".*persistence_[0-9_]+\\.xsd.*"
       regex: true
+
+  # Container class references embedded in web.xml values.
   - org.openrewrite.xml.ChangeTagValue:
       elementName: //servlet-class
       oldValue: "^javax\\.(.*)$"

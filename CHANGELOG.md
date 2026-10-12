@@ -1,5 +1,14 @@
 # Changelog
 
+## v36
+
+- Made `jakarta-descriptors` always-on so descriptor migration no longer depends on MTA emitting XML findings.
+- Added Jakarta CDI 4.0 `beans.xml` migration to the Jakarta EE namespace, `beans_4_0.xsd`, and version `4.0` while preserving existing `bean-discovery-mode`.
+- Expanded `faces-config.xml` migration to support both legacy `java.sun.com` and `xmlns.jcp.org` Java EE namespaces and normalize to Jakarta Faces 4.0.
+- Added missing-version normalization for supported descriptors and expanded descriptor residual checks.
+- Corrected the Jakarta EE 10 persistence descriptor target from Persistence 3.0 to Persistence 3.1.
+- Added regression coverage for JSF 2.1/2.2 `faces-config.xml`, CDI 2.0 `beans.xml`, and the Jakarta Persistence 3.1 descriptor baseline.
+
 ## v35
 
 - Fixed the property-driven JSF migration regression test so it declares the expected transformed POM instead of incorrectly asserting that the recipe makes no change.

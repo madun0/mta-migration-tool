@@ -79,6 +79,17 @@ class CatalogStructureTest {
         assertTrue(jakartaImports.reviewChecklist.stream()
                 .anyMatch(item -> item.contains("before replacing legacy javax API dependencies")));
 
+        MigrationCatalog.FamilySpec jakartaDescriptors = catalog.families.get("jakarta-descriptors");
+        assertNotNull(jakartaDescriptors);
+        assertTrue(jakartaDescriptors.always,
+                "jakarta-descriptors must always run because descriptor migration cannot depend on MTA emitting every XML finding");
+        assertFalse(jakartaDescriptors.compileAfterApply);
+        assertTrue(jakartaDescriptors.forbiddenPatterns.contains("http://java.sun.com/xml/ns/javaee"));
+        assertTrue(jakartaDescriptors.forbiddenPatterns.contains("web-facesconfig_2_2.xsd"));
+        assertTrue(jakartaDescriptors.forbiddenPatterns.contains("beans_2_0.xsd"));
+        assertTrue(jakartaDescriptors.forbiddenPatterns.contains("persistence_3_0.xsd"));
+        assertTrue(jakartaDescriptors.reviewChecklist.stream()
+                .anyMatch(item -> item.contains("bean-discovery-mode")));
 
         assertEquals("ASSISTED", requestContext.automation);
         assertEquals(3, requestContext.reviewChecklist.size());

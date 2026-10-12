@@ -62,7 +62,7 @@ The recipe preserves explicit managed-bean names. JSF `eager=true`, `@ManagedPro
 
 ### Descriptor targets
 
-The descriptor recipe normalizes common deployment descriptors to the Jakarta EE 10 baseline used by this Workbench: Servlet 6.0 for `web.xml` and Faces 4.0 for `faces-config.xml`. Vendor-specific descriptor semantics remain outside automatic transformation.
+The descriptor recipe is always scheduled and normalizes common deployment descriptors to the Jakarta EE 10 baseline used by this Workbench: Servlet 6.0 for `web.xml`, Jakarta Faces 4.0 for `faces-config.xml`, CDI 4.0 for `beans.xml`, and Jakarta Persistence 3.1 for `persistence.xml`. It recognizes both legacy `http://java.sun.com/xml/ns/javaee` and `http://xmlns.jcp.org/xml/ns/javaee` namespaces. Existing `bean-discovery-mode` values are preserved because CDI 4.0 changed default discovery behavior; discovery semantics remain a developer-review item. Vendor-specific descriptor semantics remain outside automatic transformation.
 
 
 ## Jakarta EE 10 compile-time API baseline
@@ -116,7 +116,7 @@ This ordering prevents an application from losing the legacy parser classpath be
 
 When a legacy application explicitly declares `javax.inject:javax.inject` (or `javax.inject:javax.inject-api`), `MigrateJakartaDependencies` converts that declaration to `jakarta.inject:jakarta.inject-api:2.0.1` with `provided` scope. Applications that relied entirely on the application server still receive the provided `jakarta.platform:jakarta.jakartaee-api:10.0.0` compile baseline.
 
-If an application was already migrated with an older Workbench release and `jakarta-imports` was marked complete while legacy imports remain, v33 allows an explicit repair pass with `migrate migrate --family jakarta-imports`. For the cleanest validation of ordering changes, `migrate restart` from a clean application Git state and rerun assess/plan/migrate.
+If an application was already migrated with an older Workbench release and a family was marked complete while legacy content remains, an explicit family run re-executes it. Use `migrate migrate --family jakarta-imports` for source namespaces or `migrate migrate --family jakarta-descriptors` for `web.xml`, `faces-config.xml`, `beans.xml`, and `persistence.xml`. For the cleanest validation of ordering changes, `migrate restart` from a clean application Git state and rerun assess/plan/migrate.
 
 ## Deterministic RequestContext migration
 
