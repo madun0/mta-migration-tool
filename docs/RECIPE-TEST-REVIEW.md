@@ -46,7 +46,7 @@ Maven is not installed in this execution environment, so the dependency-aware JU
 Run the following on the development workstation:
 
 ```bash
-mvn -pl recipes/primefaces-openrewrite-recipes clean test
+mvn -pl recipes/openrewrite-recipes clean test
 mvn clean install
 ```
 

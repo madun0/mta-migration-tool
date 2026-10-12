@@ -15,7 +15,7 @@ mvn -pl workbench-cli -am test
 ## Recipe module only
 
 ```bash
-mvn -pl recipes/primefaces-openrewrite-recipes test
+mvn -pl recipes/openrewrite-recipes test
 ```
 
 ## Adding a migration family

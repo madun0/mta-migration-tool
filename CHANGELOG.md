@@ -1,4 +1,13 @@
-## SNAPSHOT - comprehensive web.xml javax migration
+# Changelog
+
+## v45 - OpenRewrite recipe module path refactor
+
+- Renamed the source module directory from `recipes/primefaces-openrewrite-recipes` to `recipes/openrewrite-recipes`.
+- Updated the root Maven reactor, migration catalog guide paths, and developer documentation to use the new module path.
+- Renamed the module display name to `OpenRewrite Recipes` because it contains both foundation/Jakarta and PrimeFaces recipes.
+- Kept the Maven artifact coordinate `com.jackson.mta:primefaces-openrewrite-recipes:1.0.0-SNAPSHOT` unchanged for compatibility.
+
+## v44 - Comprehensive web.xml javax migration
 
 - Expanded `jakarta-descriptors` beyond `servlet-class`, `filter-class`, `listener-class`, and Faces context parameters so Jakarta EE-owned `javax.*` references anywhere in `web.xml` are migrated to `jakarta.*`.
 - Uses a curated Jakarta EE package allowlist instead of a blanket `javax.` replacement; Java SE namespaces such as `javax.sql`, `javax.crypto`, `javax.naming`, `javax.transaction.xa`, and `javax.annotation.processing` remain unchanged.
@@ -6,33 +15,32 @@
 - Added regression coverage for broad `web.xml` class/type migration, Java SE exclusions, and generated descriptor copies.
 - Kept the recipe artifact coordinate at `com.jackson.mta:primefaces-openrewrite-recipes:1.0.0-SNAPSHOT`.
 
-## SNAPSHOT - persisted MTA report links
+## v43 - Persisted MTA report links
 
 - Rebased MTA's user-facing static-report and `analysis.log` links from the temporary staging directory to the durable `.migration/assessment` or `.migration/verification` directory while output is streamed.
 - Rewrites staging-directory references embedded in persisted textual MTA report assets after they are copied from staging.
 - Prints canonical persisted static-report and analysis-log URIs after the report is installed.
 - Added regression coverage for console-link rebasing and persisted report/log path rebasing.
 
-## SNAPSHOT - generated build-output restore + execution timers
+## v42 - Generated build-output restore + execution timers
 
 - Fixed MTA analysis cleanup when Maven/MTA recreates `target/` while the original build output is temporarily hidden. The transient replacement is now deleted and the original build tree is restored.
 - Added per-family migration timers, overall `migrate` and `verify` timers, and MTA external-process elapsed time.
 - Added regression coverage for recreated `target/` collision handling and timer formatting.
 
-## Unreleased - MTA cleanup compile fix
+## v41 - MTA cleanup compile fix
 
 - Fixed the CLI compilation regression in `MtaService`: static MTA isolation helpers now call a static `deleteQuietly(Path)` cleanup helper.
 - No migration behavior changed; the descriptor recipes, `.migration` isolation, Maven `target/` isolation, and `1.0.0-SNAPSHOT` recipe coordinate remain unchanged.
 
-## Unreleased - MTA descriptor verification isolation
+## v40 - MTA descriptor verification isolation
 
 - Exclude Maven `target/` trees from every MTA assessment by temporarily moving them outside the application root while `mta-cli analyze` runs, then restoring them byte-for-byte. This prevents generated/stale descriptor copies such as `target/classes/META-INF/persistence.xml` from re-triggering Java EE XSD findings.
 - Strengthen the `jakarta-descriptors` verification gate to reject any remaining legacy JCP/Java EE XML namespace under application source, not only a fixed list of descriptor XSD filenames.
 - Keep the recipe artifact coordinate at `com.jackson.mta:primefaces-openrewrite-recipes:1.0.0-SNAPSHOT`.
 
-# Changelog
 
-## SNAPSHOT MTA verification isolation
+## v39 - MTA verification isolation
 
 - Fixed `migrate verify` re-analyzing `.migration/assessment/output.yaml` and other Workbench-generated artifacts during its post-migration MTA pass.
 - MTA now runs with `.migration` temporarily moved outside the application root and writes its report to an external staging directory; Workbench restores `.migration` and copies only the requested fresh assessment/verification report back afterward.
@@ -40,7 +48,7 @@
 - Added regression coverage proving Workbench state is hidden/restored safely and that staged MTA output replaces only the requested assessment/verification subdirectory.
 - Kept the OpenRewrite recipe artifact coordinate at `com.jackson.mta:primefaces-openrewrite-recipes:1.0.0-SNAPSHOT`.
 
-## SNAPSHOT descriptor follow-up
+## v38 - Descriptor follow-up
 
 - Fixed `MigrateJakartaDescriptors` schema-location replacement so existing `xsi:schemaLocation` values are replaced exactly once instead of being duplicated by the zero-length terminal match produced by `(?s).*`.
 - Removed regex matching for descriptor schema locations; `ChangeTagAttribute` now targets the existing attribute value directly with `oldValue: null`, which is multiline-safe and idempotent.

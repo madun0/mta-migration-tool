@@ -351,7 +351,7 @@ families:
     recipes:
     - com.jackson.mta.foundation.UpgradePrimeFacesDependency
     cleanupRecipes: []
-    guide: recipes/primefaces-openrewrite-recipes/README.md
+    guide: recipes/openrewrite-recipes/README.md
     forbiddenPatterns:
     - <version>6.2</version>
     always: false
@@ -369,7 +369,7 @@ families:
     recipes:
     - com.jackson.mta.primefaces.PrimeFaces62RequestContextMigration
     cleanupRecipes: []
-    guide: recipes/primefaces-openrewrite-recipes/REQUESTCONTEXT-MIGRATION.md
+    guide: recipes/openrewrite-recipes/REQUESTCONTEXT-MIGRATION.md
     forbiddenPatterns:
     - org.primefaces.context.RequestContext
     always: true
@@ -393,7 +393,7 @@ families:
     recipes:
     - com.jackson.mta.primefaces.PrimeFaces62FileUploadMigration
     cleanupRecipes: []
-    guide: recipes/primefaces-openrewrite-recipes/FILEUPLOAD-MIGRATION.md
+    guide: recipes/openrewrite-recipes/FILEUPLOAD-MIGRATION.md
     forbiddenPatterns:
     - org.primefaces.model.UploadedFile
     - fileUploadListener=
@@ -417,7 +417,7 @@ families:
     recipes:
     - com.jackson.mta.primefaces.PrimeFaces62StreamedContentMigration
     cleanupRecipes: []
-    guide: recipes/primefaces-openrewrite-recipes/STREAMEDCONTENT-EDGE-MIGRATION.md
+    guide: recipes/openrewrite-recipes/STREAMEDCONTENT-EDGE-MIGRATION.md
     forbiddenPatterns:
     - org.primefaces.model.ByteArrayContent
     always: false
@@ -434,7 +434,7 @@ families:
     recipes:
     - com.jackson.mta.primefaces.PrimeFaces62MenuMigration
     cleanupRecipes: []
-    guide: recipes/primefaces-openrewrite-recipes/MENU-MIGRATION.md
+    guide: recipes/openrewrite-recipes/MENU-MIGRATION.md
     forbiddenPatterns:
     - org.primefaces.model.menu.DynamicMenuModel
     always: false
@@ -450,7 +450,7 @@ families:
     recipes:
     - com.jackson.mta.primefaces.PrimeFaces62JsonMigration
     cleanupRecipes: []
-    guide: recipes/primefaces-openrewrite-recipes/JSON-MIGRATION.md
+    guide: recipes/openrewrite-recipes/JSON-MIGRATION.md
     forbiddenPatterns:
     - org.primefaces.json.
     always: false
@@ -467,7 +467,7 @@ families:
     - com.jackson.mta.primefaces.PrimeFaces62LazyDataModelMigration
     - com.jackson.mta.primefaces.PrimeFaces62LazyDataModelCountBridge
     cleanupRecipes: []
-    guide: recipes/primefaces-openrewrite-recipes/LAZYDATAMODEL-MIGRATION.md
+    guide: recipes/openrewrite-recipes/LAZYDATAMODEL-MIGRATION.md
     forbiddenPatterns: []
     always: false
     mtaRulePrefixes: []
@@ -483,7 +483,7 @@ families:
     recipes:
     - com.jackson.mta.primefaces.PrimeFaces62DataTableMigration
     cleanupRecipes: []
-    guide: recipes/primefaces-openrewrite-recipes/DATATABLE-MIGRATION.md
+    guide: recipes/openrewrite-recipes/DATATABLE-MIGRATION.md
     forbiddenPatterns:
     - filterOptions=
     always: false
@@ -499,7 +499,7 @@ families:
     recipes:
     - com.jackson.mta.primefaces.PrimeFaces62RowsPerPageMigration
     cleanupRecipes: []
-    guide: recipes/primefaces-openrewrite-recipes/ROWSPERPAGE-MIGRATION.md
+    guide: recipes/openrewrite-recipes/ROWSPERPAGE-MIGRATION.md
     forbiddenPatterns: []
     always: false
     mtaRulePrefixes: []
@@ -515,7 +515,7 @@ families:
     - com.jackson.mta.primefaces.PrimeFaces62CalendarToDatePicker
     cleanupRecipes:
     - com.jackson.mta.primefaces.PrimeFaces62CalendarCleanupAfterReview
-    guide: recipes/primefaces-openrewrite-recipes/CALENDAR-MIGRATION.md
+    guide: recipes/openrewrite-recipes/CALENDAR-MIGRATION.md
     forbiddenPatterns:
     - <p:calendar
     always: false
@@ -535,7 +535,7 @@ families:
     recipes:
     - com.jackson.mta.primefaces.PrimeFaces62ScheduleMigration
     cleanupRecipes: []
-    guide: recipes/primefaces-openrewrite-recipes/SCHEDULE-MIGRATION.md
+    guide: recipes/openrewrite-recipes/SCHEDULE-MIGRATION.md
     forbiddenPatterns: []
     always: false
     mtaRulePrefixes: []
@@ -550,7 +550,7 @@ families:
     recipes:
     - com.jackson.mta.primefaces.PrimeFaces62TimelineMigration
     cleanupRecipes: []
-    guide: recipes/primefaces-openrewrite-recipes/TIMELINE-MIGRATION.md
+    guide: recipes/openrewrite-recipes/TIMELINE-MIGRATION.md
     forbiddenPatterns: []
     always: false
     mtaRulePrefixes: []
@@ -566,7 +566,7 @@ families:
     - com.jackson.mta.primefaces.PrimeFaces62InputSwitchMigration
     cleanupRecipes:
     - com.jackson.mta.primefaces.PrimeFaces62InputSwitchCleanupAfterReview
-    guide: recipes/primefaces-openrewrite-recipes/INPUTSWITCH-MIGRATION.md
+    guide: recipes/openrewrite-recipes/INPUTSWITCH-MIGRATION.md
     forbiddenPatterns:
     - <p:inputSwitch
     always: false
@@ -582,7 +582,7 @@ families:
     recipes:
     - com.jackson.mta.primefaces.PrimeFaces62RepeatMigration
     cleanupRecipes: []
-    guide: recipes/primefaces-openrewrite-recipes/REPEAT-MIGRATION.md
+    guide: recipes/openrewrite-recipes/REPEAT-MIGRATION.md
     forbiddenPatterns:
     - <p:repeat
     always: false
@@ -598,7 +598,7 @@ families:
     recipes:
     - com.jackson.mta.primefaces.PrimeFaces62InputMaskMigration
     cleanupRecipes: []
-    guide: recipes/primefaces-openrewrite-recipes/INPUTMASK-MIGRATION.md
+    guide: recipes/openrewrite-recipes/INPUTMASK-MIGRATION.md
     forbiddenPatterns: []
     always: true
     mtaRulePrefixes: []
@@ -613,7 +613,7 @@ families:
     recipes:
     - com.jackson.mta.primefaces.PrimeFaces62OverlayPanelMigration
     cleanupRecipes: []
-    guide: recipes/primefaces-openrewrite-recipes/OVERLAYPANEL-MIGRATION.md
+    guide: recipes/openrewrite-recipes/OVERLAYPANEL-MIGRATION.md
     forbiddenPatterns:
     - appendToBody=
     always: false
@@ -629,7 +629,7 @@ families:
     recipes:
     - com.jackson.mta.primefaces.PrimeFaces62AutoUpdateMigration
     cleanupRecipes: []
-    guide: recipes/primefaces-openrewrite-recipes/AUTOUPDATE-MIGRATION.md
+    guide: recipes/openrewrite-recipes/AUTOUPDATE-MIGRATION.md
     forbiddenPatterns: []
     always: false
     mtaRulePrefixes: []
@@ -647,7 +647,7 @@ families:
     - com.jackson.mta.primefaces.PrimeFaces16ChartScaffold
     cleanupRecipes:
     - com.jackson.mta.primefaces.PrimeFaces16ChartXhtmlFinalize
-    guide: recipes/primefaces-openrewrite-recipes/CHART-MIGRATION.md
+    guide: recipes/openrewrite-recipes/CHART-MIGRATION.md
     forbiddenPatterns: []
     always: false
     mtaRulePrefixes: []
@@ -662,7 +662,7 @@ families:
     recipes:
     - com.jackson.mta.primefaces.PrimeFaces62PushMigration
     cleanupRecipes: []
-    guide: recipes/primefaces-openrewrite-recipes/PUSH-MIGRATION.md
+    guide: recipes/openrewrite-recipes/PUSH-MIGRATION.md
     forbiddenPatterns:
     - <p:socket
     - org.primefaces.push
@@ -680,7 +680,7 @@ families:
     recipes:
     - com.jackson.mta.primefaces.PrimeFaces62LegacyFaceletAndWatermarkMigration
     cleanupRecipes: []
-    guide: recipes/primefaces-openrewrite-recipes/FACELET-WATERMARK-MIGRATION.md
+    guide: recipes/openrewrite-recipes/FACELET-WATERMARK-MIGRATION.md
     forbiddenPatterns:
     - p:component(
     - p:widgetVar(

@@ -11,7 +11,7 @@
   <name>Migration Tool Workbench</name>
 
   <modules>
-    <module>recipes/primefaces-openrewrite-recipes</module>
+    <module>recipes/openrewrite-recipes</module>
     <module>migrate-cli</module>
   </modules>
 </project>
