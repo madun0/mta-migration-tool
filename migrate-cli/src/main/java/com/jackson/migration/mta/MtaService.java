@@ -6,6 +6,7 @@ import com.jackson.migration.config.MigrationConfig;
 import com.jackson.migration.process.CommandResult;
 import com.jackson.migration.process.CommandRunner;
 import com.jackson.migration.process.ToolLocator;
+import com.jackson.migration.util.ElapsedTime;
 import com.jackson.migration.util.WorkbenchHome;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -13,6 +14,7 @@ import jakarta.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -123,11 +125,15 @@ public class MtaService {
 
         try {
             CommandResult result;
-            try (HiddenWorkbenchState ignored = hideWorkbenchState(projectRoot);
-                 HiddenGeneratedDirectories ignoredBuildOutput = hideGeneratedDirectories(projectRoot)) {
-                result = runner.runStreaming(executionDirectory, command);
+            Instant mtaStart = Instant.now();
+            try {
+                try (HiddenWorkbenchState ignored = hideWorkbenchState(projectRoot);
+                     HiddenGeneratedDirectories ignoredBuildOutput = hideGeneratedDirectories(projectRoot)) {
+                    result = runner.runStreaming(executionDirectory, command);
+                }
             } finally {
                 deleteQuietly(executionDirectory);
+                System.out.println("[TIMER] MTA analyze: " + ElapsedTime.format(ElapsedTime.since(mtaStart)));
             }
             if (!result.success()) throw new IOException("MTA analysis failed with exit code " + result.exitCode());
 
@@ -258,8 +264,10 @@ public class MtaService {
             try {
                 if (!Files.exists(entry.hidden())) continue;
                 if (Files.exists(entry.original())) {
-                    throw new IOException("Cannot restore generated build output because MTA recreated "
-                            + entry.original() + " while analysis was running.");
+                    // The original build output was moved away before MTA started. Anything that
+                    // reappears at the original path while analysis is running is transient output
+                    // created by MTA/Maven and must not replace the caller's pre-existing build tree.
+                    deleteRecursively(entry.original());
                 }
                 Path parent = entry.original().getParent();
                 if (parent != null) Files.createDirectories(parent);
@@ -485,7 +493,20 @@ public class MtaService {
         return requested;
     }
 
-    /** Best-effort cleanup for isolated MTA working and staging directories. */
+    /** Deletes a file or directory tree and propagates filesystem failures. */
+    private static void deleteRecursively(Path path) throws IOException {
+        if (path == null || !Files.exists(path)) return;
+        if (!Files.isDirectory(path)) {
+            Files.deleteIfExists(path);
+            return;
+        }
+        try (var paths = Files.walk(path)) {
+            for (Path candidate : paths.sorted(Comparator.reverseOrder()).toList()) {
+                Files.deleteIfExists(candidate);
+            }
+        }
+    }
+
     private static void deleteQuietly(Path directory) {
         if (directory == null || !Files.exists(directory)) return;
         try (var paths = Files.walk(directory)) {

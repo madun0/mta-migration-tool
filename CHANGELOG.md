@@ -1,3 +1,9 @@
+## SNAPSHOT - generated build-output restore + execution timers
+
+- Fixed MTA analysis cleanup when Maven/MTA recreates `target/` while the original build output is temporarily hidden. The transient replacement is now deleted and the original build tree is restored.
+- Added per-family migration timers, overall `migrate` and `verify` timers, and MTA external-process elapsed time.
+- Added regression coverage for recreated `target/` collision handling and timer formatting.
+
 ## Unreleased - MTA cleanup compile fix
 
 - Fixed the CLI compilation regression in `MtaService`: static MTA isolation helpers now call a static `deleteQuietly(Path)` cleanup helper.

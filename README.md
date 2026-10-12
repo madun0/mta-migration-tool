@@ -136,3 +136,16 @@ This count represents the raw number of incidents in MTA `output.yaml` under `vi
 
 During `assess` and `verify`, the Workbench temporarily moves `.migration` and every Maven `target/` directory outside the application tree before invoking MTA. This prevents historical reports and generated descriptor copies from being evaluated as migration source. The directories are restored immediately after MTA exits.
 
+
+
+### Execution timing
+
+Long-running Workbench operations report elapsed time in `HH:MM:SS.mmm` format. Migration families print individual timers, `migrate` and `verify` print total command time, and each MTA analysis prints its external-process duration.
+
+Example:
+
+```text
+[OK] jakarta-descriptors
+[TIMER] jakarta-descriptors: 00:00:18.442
+[TIMER] migrate total: 00:03:41.027
+```

@@ -78,6 +78,24 @@ class MtaServicePathTest {
                 Files.readString(project.resolve("module-a/target/classes/generated.txt")));
     }
 
+
+    @Test
+    void recreatedMavenBuildOutputIsDiscardedBeforeOriginalIsRestored() throws Exception {
+        Path project = Files.createDirectories(temp.resolve("workspace/recreated-target-app"));
+        Path originalTarget = Files.createDirectories(project.resolve("target/classes"));
+        Files.writeString(originalTarget.resolve("original.txt"), "original build output");
+
+        try (MtaService.HiddenGeneratedDirectories ignored = MtaService.hideGeneratedDirectories(project)) {
+            assertFalse(Files.exists(project.resolve("target")));
+
+            Path recreatedTarget = Files.createDirectories(project.resolve("target/mta-generated"));
+            Files.writeString(recreatedTarget.resolve("transient.txt"), "transient analysis output");
+        }
+
+        assertEquals("original build output", Files.readString(project.resolve("target/classes/original.txt")));
+        assertFalse(Files.exists(project.resolve("target/mta-generated/transient.txt")));
+    }
+
     @Test
     void stagedMtaOutputReplacesOnlyRequestedOutputDirectory() throws Exception {
         Path project = Files.createDirectories(temp.resolve("workspace/output-app"));

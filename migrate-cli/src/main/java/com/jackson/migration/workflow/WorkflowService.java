@@ -12,12 +12,14 @@ import com.jackson.migration.reporting.ReportService;
 import com.jackson.migration.rewrite.RewriteService;
 import com.jackson.migration.validation.ValidationResult;
 import com.jackson.migration.validation.ValidationService;
+import com.jackson.migration.util.ElapsedTime;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,8 +99,10 @@ public class WorkflowService {
      * @throws Exception if configuration, checkpointing, rewrite, Git, or validation operations fail
      */
     public void migrate(Path project, String phaseFilter, String familyFilter) throws Exception {
-        MigrationConfig config = configs.load(project);
-        MigrationCatalog catalog = catalogs.load();
+        Instant commandStart = Instant.now();
+        try {
+            MigrationConfig config = configs.load(project);
+            MigrationCatalog catalog = catalogs.load();
         MigrationPlan plan = loadOrPlan(project);
         refreshRuntimePolicies(plan, catalog);
         MigrationState state = states.load(project).orElseGet(MigrationState::new);
@@ -120,6 +124,7 @@ public class WorkflowService {
             }
             for (MigrationPlan.Task task : phase.tasks) {
                 if (!explicitFamilyRun && state.completedFamilies.contains(task.family)) continue;
+                Instant familyStart = Instant.now();
                 if (explicitFamilyRun) state.completedFamilies.remove(task.family);
                 state.currentPhase = phase.name;
                 state.currentFamily = task.family;
@@ -132,6 +137,7 @@ public class WorkflowService {
                     state.completedFamilies.add(task.family);
                     states.save(project, state);
                     System.out.println("[MANUAL] " + task.family + " -> added to .migration/TODO.md");
+                    System.out.println("[TIMER] " + task.family + ": " + ElapsedTime.format(ElapsedTime.since(familyStart)));
                     continue;
                 }
 
@@ -149,12 +155,14 @@ public class WorkflowService {
                     }
                     states.save(project, state);
                     System.out.println("[OK] " + task.family);
+                    System.out.println("[TIMER] " + task.family + ": " + ElapsedTime.format(ElapsedTime.since(familyStart)));
                 } catch (Exception e) {
                     checkpoints.complete(project, cp);
                     state.status = "FAILED";
                     state.lastError = e.getMessage();
                     states.save(project, state);
                     System.err.println("[FAILED] " + task.family + ": " + e.getMessage());
+                    System.err.println("[TIMER] " + task.family + ": " + ElapsedTime.format(ElapsedTime.since(familyStart)));
                     System.err.println("Fix the problem and run 'migrate resume', or run 'migrate rollback'.");
                     return;
                 }
@@ -166,6 +174,9 @@ public class WorkflowService {
         state.currentPhase = null;
         states.save(project, state);
         System.out.println("Migration pass complete. Status: " + state.status);
+        } finally {
+            System.out.println("[TIMER] migrate total: " + ElapsedTime.format(ElapsedTime.since(commandStart)));
+        }
     }
 
     /**
@@ -244,8 +255,10 @@ public class WorkflowService {
      * @throws Exception if build, MTA, state, or report operations fail
      */
     public void verify(Path project) throws Exception {
-        MigrationConfig config = configs.load(project);
-        MigrationCatalog catalog = catalogs.load();
+        Instant commandStart = Instant.now();
+        try {
+            MigrationConfig config = configs.load(project);
+            MigrationCatalog catalog = catalogs.load();
         MigrationState state = states.load(project)
                 .orElseThrow(() -> new IllegalStateException("No migration state exists. Run migrate first."));
 
@@ -315,6 +328,9 @@ public class WorkflowService {
 
         if ("FAILED".equals(state.status)) {
             throw new IllegalStateException(state.lastError);
+        }
+        } finally {
+            System.out.println("[TIMER] verify total: " + ElapsedTime.format(ElapsedTime.since(commandStart)));
         }
     }
 
