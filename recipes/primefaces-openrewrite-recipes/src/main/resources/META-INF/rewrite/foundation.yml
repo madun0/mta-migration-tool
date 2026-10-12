@@ -73,6 +73,13 @@ recipeList:
       newVersion: 4.0.1
       overrideManagedVersion: false
       changeManagedDependency: true
+  # Normalize a property-driven JSF version only after the dependency coordinates
+  # have moved to jakarta.faces. Updating the property first makes Maven/OpenRewrite
+  # temporarily resolve the invalid legacy coordinate javax.faces:javax.faces-api:4.0.1.
+  - org.openrewrite.maven.ChangePropertyValue:
+      key: jsf.version
+      newValue: 4.0.1
+      addIfMissing: false
   - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
       oldGroupId: javax.validation
       oldArtifactId: validation-api

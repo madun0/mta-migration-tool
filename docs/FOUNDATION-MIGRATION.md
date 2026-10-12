@@ -121,3 +121,14 @@ If an application was already migrated with an older Workbench release and `jaka
 ## Deterministic RequestContext migration
 
 The `request-context` family is always scheduled in `PRIMEFACES_CORE`. MTA evidence is still retained when available, but planning no longer depends on the custom finding being emitted. This prevents supported `RequestContext` calls from surviving until the PrimeFaces 16 dependency upgrade.
+
+
+## Jakarta Faces Maven version properties
+
+When a legacy JSF dependency is versioned through a Maven property such as:
+
+```xml
+<jsf.version>2.3</jsf.version>
+```
+
+`MigrateJakartaDependencies` first migrates `javax.faces:javax.faces-api` to `jakarta.faces:jakarta.faces-api`, then updates an existing `jsf.version` property to `4.0.1`. This ordering avoids temporarily resolving the invalid legacy coordinate `javax.faces:javax.faces-api:4.0.1`. The property is not added when it does not already exist.

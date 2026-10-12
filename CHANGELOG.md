@@ -1,5 +1,16 @@
 # Changelog
 
+## v35
+
+- Fixed the property-driven JSF migration regression test so it declares the expected transformed POM instead of incorrectly asserting that the recipe makes no change.
+- Reordered `MigrateJakartaDependencies` so `javax.faces:javax.faces-api` moves to `jakarta.faces:jakarta.faces-api` before `jsf.version` is normalized to `4.0.1`, avoiding a transient resolution attempt for the invalid coordinate `javax.faces:javax.faces-api:4.0.1`.
+- Added a regression assertion that the migrated POM contains no legacy-Faces resolution-failure marker.
+
+## v34
+
+- Update an existing Maven `jsf.version` property to `4.0.1` during `MigrateJakartaDependencies`, fixing property-driven `javax.faces-api` dependencies that retained a JSF 2.x version after coordinate migration.
+- Added a regression test covering a POM whose JSF dependency uses `${jsf.version}`.
+
 ## v33
 
 - Made `jakarta-imports` an always-on FOUNDATION family so `migrate migrate` does not depend on MTA emitting every `javax` namespace finding.

@@ -71,6 +71,70 @@ class FoundationRecipeTransformationTest implements RewriteTest {
     }
 
     @Test
+    void updatesJsfVersionPropertyWhenMigratingFacesDependency() {
+        rewriteRun(
+            spec -> spec.recipeFromResources("com.jackson.mta.foundation.MigrateJakartaDependencies"),
+            pomXml(
+                """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>example</groupId>
+                    <artifactId>property-driven-jsf-app</artifactId>
+                    <version>1.0</version>
+                    <properties>
+                        <jsf.version>2.3</jsf.version>
+                    </properties>
+                    <dependencies>
+                        <dependency>
+                            <groupId>javax.faces</groupId>
+                            <artifactId>javax.faces-api</artifactId>
+                            <version>${jsf.version}</version>
+                        </dependency>
+                    </dependencies>
+                </project>
+                """,
+                """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>example</groupId>
+                    <artifactId>property-driven-jsf-app</artifactId>
+                    <version>1.0</version>
+                    <properties>
+                        <jsf.version>4.0.1</jsf.version>
+                    </properties>
+                    <dependencies>
+                        <dependency>
+                            <groupId>jakarta.faces</groupId>
+                            <artifactId>jakarta.faces-api</artifactId>
+                            <version>${jsf.version}</version>
+                            <scope>provided</scope>
+                        </dependency>
+                        <dependency>
+                            <groupId>jakarta.platform</groupId>
+                            <artifactId>jakarta.jakartaee-api</artifactId>
+                            <version>10.0.0</version>
+                            <scope>provided</scope>
+                        </dependency>
+                    </dependencies>
+                </project>
+                """,
+                spec -> spec.afterRecipe(pom -> {
+                    String xml = pom.printAll();
+                    assertTrue(xml.contains("<jsf.version>4.0.1</jsf.version>"),
+                            "jsf.version must be migrated to the Jakarta Faces 4 baseline");
+                    assertTrue(xml.contains("<groupId>jakarta.faces</groupId>"),
+                            "Faces dependency groupId must migrate to jakarta.faces");
+                    assertTrue(xml.contains("<artifactId>jakarta.faces-api</artifactId>"),
+                            "Faces dependency artifactId must migrate to jakarta.faces-api");
+                    assertTrue(!xml.contains("javax.faces:javax.faces-api:4.0.1 failed"),
+                            "migration must not attempt to resolve the Jakarta Faces version against legacy javax.faces coordinates");
+                    assertJakartaEePlatformDependency(pom);
+                })
+            )
+        );
+    }
+
+    @Test
     void addsJakartaEe10CompileBaselineWhenLegacyPomReliedOnEapApis() {
         rewriteRun(
             spec -> spec.recipeFromResources("com.jackson.mta.foundation.MigrateJakartaDependencies"),

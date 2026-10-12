@@ -63,6 +63,10 @@ class CatalogStructureTest {
         assertFalse(jakartaDependencies.compileAfterApply);
         assertTrue(jakartaDependencies.reviewChecklist.stream()
                 .anyMatch(item -> item.contains("Defer compilation")));
+        assertTrue(jakartaDependencies.reviewChecklist.stream()
+                .anyMatch(item -> item.contains("jsf.version")));
+        assertTrue(jakartaDependencies.forbiddenPatterns.contains("<jsf.version>2."));
+        assertTrue(jakartaDependencies.forbiddenPatterns.contains("<jsf.version>3."));
 
         MigrationCatalog.FamilySpec jakartaImports = catalog.families.get("jakarta-imports");
         assertNotNull(jakartaImports);

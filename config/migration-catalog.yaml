@@ -135,8 +135,11 @@ families:
     forbiddenPatterns:
     - <groupId>javax.
     - <artifactId>javax.
+    - <jsf.version>2.
+    - <jsf.version>3.
     always: true
     reviewChecklist:
+    - Confirm an existing jsf.version property was normalized to 4.0.1 when the application uses property-driven JSF dependency versions.
     - Verify the provided jakarta.platform:jakarta.jakartaee-api:10.0.0 compile baseline is compatible with the approved EAP 8 BOM/dependency-management strategy.
     - Review explicitly migrated Jakarta API dependencies, including jakarta.inject:jakarta.inject-api when it was declared directly, and remove redundant versions when the target EAP BOM manages them.
     - Defer compilation until the Jakarta dependency, import, descriptor, and Faces source transformations for this phase
