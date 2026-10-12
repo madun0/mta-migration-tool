@@ -1,4 +1,4 @@
-# Jackson Migration Workbench
+# Migration Workbench
 
 
 > **Descriptor migration note:** the bundled OpenRewrite recipes currently use the development coordinate `com.jackson.mta:primefaces-openrewrite-recipes:1.0.0-SNAPSHOT`. Run `mvn clean install` from this Workbench root after updating the Workbench so the current snapshot recipe JAR is installed before invoking `bin/migrate`. Descriptor migration handles multiline schema locations and `javax.faces.*` context-param names.
