@@ -29,7 +29,7 @@ From the Workbench root run:
 mvn clean install
 ```
 
-This installs `com.jackson.mta:primefaces-openrewrite-recipes:1.0.0-SNAPSHOT` into the local Maven repository.
+This installs the current `com.jackson.mta:primefaces-openrewrite-recipes:1.0.0-SNAPSHOT` into the local Maven repository. Re-run `mvn clean install` after updating the Workbench so the snapshot JAR is refreshed.
 
 ## Worktree is not clean
 

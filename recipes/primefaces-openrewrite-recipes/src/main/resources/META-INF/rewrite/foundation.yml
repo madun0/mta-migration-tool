@@ -216,7 +216,8 @@ name: com.jackson.mta.foundation.MigrateJakartaDescriptors
 displayName: Migrate Java EE deployment descriptors to Jakarta EE 10 schemas
 description: >-
   Normalizes common web.xml, faces-config.xml, beans.xml, and persistence.xml namespaces, schema locations,
-  versions, and javax-prefixed container class references for the Jakarta EE 10 baseline.
+  versions, and javax-prefixed descriptor values for the Jakarta EE 10 baseline. Schema-location matching is
+  deliberately multiline-safe because production XML commonly wraps xsi:schemaLocation across lines.
 recipeList:
   # Servlet 6.0 / web.xml. Support both Java EE 6/7-era java.sun.com and Java EE 7/8-era xmlns.jcp.org namespaces.
   - org.openrewrite.xml.ChangeTagAttribute:
@@ -245,8 +246,8 @@ recipeList:
       elementName: //web-app
       attributeName: xsi:schemaLocation
       newValue: https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd
-      oldValue: ".*web-app_[0-9_]+\\.xsd.*"
-      regex: true
+      oldValue: null
+      regex: false
 
   # Jakarta Faces 4.0 / faces-config.xml.
   - org.openrewrite.xml.ChangeTagAttribute:
@@ -275,8 +276,8 @@ recipeList:
       elementName: //faces-config
       attributeName: xsi:schemaLocation
       newValue: https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-facesconfig_4_0.xsd
-      oldValue: ".*web-facesconfig_[0-9_]+\\.xsd.*"
-      regex: true
+      oldValue: null
+      regex: false
 
   # CDI 4.0 / beans.xml. Deliberately preserve bean-discovery-mode because CDI 4 changes default discovery semantics.
   - org.openrewrite.xml.ChangeTagAttribute:
@@ -305,8 +306,8 @@ recipeList:
       elementName: //beans
       attributeName: xsi:schemaLocation
       newValue: https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/beans_4_0.xsd
-      oldValue: ".*beans_[0-9_]+\\.xsd.*"
-      regex: true
+      oldValue: null
+      regex: false
 
   # Jakarta Persistence 3.1 is the Jakarta EE 10 persistence descriptor baseline.
   - org.openrewrite.xml.ChangeTagAttribute:
@@ -314,6 +315,12 @@ recipeList:
       attributeName: xmlns
       newValue: https://jakarta.ee/xml/ns/persistence
       oldValue: http://xmlns.jcp.org/xml/ns/persistence
+      regex: false
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: //persistence
+      attributeName: xmlns
+      newValue: https://jakarta.ee/xml/ns/persistence
+      oldValue: http://java.sun.com/xml/ns/persistence
       regex: false
   - org.openrewrite.xml.ChangeTagAttribute:
       elementName: //persistence
@@ -329,24 +336,29 @@ recipeList:
       elementName: //persistence
       attributeName: xsi:schemaLocation
       newValue: https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_1.xsd
-      oldValue: ".*persistence_[0-9_]+\\.xsd.*"
-      regex: true
+      oldValue: null
+      regex: false
 
-  # Container class references embedded in web.xml values.
+  # Container/API values embedded in descriptors.
   - org.openrewrite.xml.ChangeTagValue:
       elementName: //servlet-class
-      oldValue: "^javax\\.(.*)$"
+      oldValue: '^javax\.(.*)$'
       newValue: "jakarta.$1"
       regex: true
   - org.openrewrite.xml.ChangeTagValue:
       elementName: //filter-class
-      oldValue: "^javax\\.(.*)$"
+      oldValue: '^javax\.(.*)$'
       newValue: "jakarta.$1"
       regex: true
   - org.openrewrite.xml.ChangeTagValue:
       elementName: //listener-class
-      oldValue: "^javax\\.(.*)$"
+      oldValue: '^javax\.(.*)$'
       newValue: "jakarta.$1"
+      regex: true
+  - org.openrewrite.xml.ChangeTagValue:
+      elementName: //param-name
+      oldValue: '^javax\.faces\.(.*)$'
+      newValue: "jakarta.faces.$1"
       regex: true
 
 ---

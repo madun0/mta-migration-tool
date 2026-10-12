@@ -58,6 +58,7 @@ public class RewriteService {
      */
     private void run(Path project, MigrationCatalog catalog, List<String> recipes, String goal)
             throws IOException, InterruptedException {
+        System.out.println("[REWRITE] recipe artifact: " + catalog.recipeArtifactCoordinates);
         List<String> args = new ArrayList<>();
         args.add("-U");
         args.add("org.openrewrite.maven:rewrite-maven-plugin:" + catalog.rewritePluginVersion + ":" + goal);

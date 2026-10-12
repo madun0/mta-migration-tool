@@ -49,8 +49,9 @@ public class DoctorService {
             failures.add("Could not inspect Git tree: " + e.getMessage());
         }
         Path recipe = Path.of(System.getProperty("user.home"), ".m2", "repository", "com", "jackson", "mta",
-                "primefaces-openrewrite-recipes", "1.0.0-SNAPSHOT");
-        check("Recipe artifact", recipe.toString(), Files.exists(recipe), failures);
+                "primefaces-openrewrite-recipes", "1.0.0-SNAPSHOT",
+                "primefaces-openrewrite-recipes-1.0.0-SNAPSHOT.jar");
+        check("Recipe artifact", recipe.toString(), Files.isRegularFile(recipe), failures);
 
         System.out.println();
         if (failures.isEmpty()) {

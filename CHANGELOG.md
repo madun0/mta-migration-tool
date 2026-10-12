@@ -1,5 +1,21 @@
 # Changelog
 
+## SNAPSHOT descriptor follow-up
+
+- Fixed `MigrateJakartaDescriptors` schema-location replacement so existing `xsi:schemaLocation` values are replaced exactly once instead of being duplicated by the zero-length terminal match produced by `(?s).*`.
+- Removed regex matching for descriptor schema locations; `ChangeTagAttribute` now targets the existing attribute value directly with `oldValue: null`, which is multiline-safe and idempotent.
+- Added an idempotency regression test for an already-migrated Jakarta Faces 4 descriptor.
+- Kept `com.jackson.mta:primefaces-openrewrite-recipes:1.0.0-SNAPSHOT` as the recipe artifact coordinate.
+
+## v37
+
+- Hardened Jakarta descriptor migration for multiline `xsi:schemaLocation` values in `faces-config.xml`, `beans.xml`, `web.xml`, and `persistence.xml`.
+- Added descriptor migration for legacy `javax.faces.*` context-param names such as `javax.faces.PROJECT_STAGE`.
+- Added multiline XML regression tests for Faces and CDI descriptors plus a web.xml Faces context-param regression test.
+- Restored the OpenRewrite recipe artifact coordinate to `com.jackson.mta:primefaces-openrewrite-recipes:1.0.0-SNAPSHOT` while the Workbench remains under active development. Run `mvn clean install` after updating the Workbench so the current snapshot replaces the previously installed recipe JAR in `~/.m2`.
+- Updated `doctor` and migration logs to report the exact SNAPSHOT recipe artifact coordinate being executed.
+- Updated recipe documentation to use the development SNAPSHOT coordinate.
+
 ## v36
 
 - Made `jakarta-descriptors` always-on so descriptor migration no longer depends on MTA emitting XML findings.

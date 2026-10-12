@@ -625,6 +625,105 @@ class FoundationRecipeTransformationTest implements RewriteTest {
     }
 
     @Test
+    void migratesMultilineFacesConfigSchemaLocation() {
+        rewriteRun(
+            spec -> spec.recipeFromResources("com.jackson.mta.foundation.MigrateJakartaDescriptors"),
+            xml(
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <faces-config xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+                              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                              xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+                                                  http://xmlns.jcp.org/xml/ns/javaee/web-facesconfig_2_2.xsd"
+                              version="2.2">
+                    <application/>
+                </faces-config>
+                """,
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <faces-config xmlns="https://jakarta.ee/xml/ns/jakartaee"
+                              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                              xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-facesconfig_4_0.xsd"
+                              version="4.0">
+                    <application/>
+                </faces-config>
+                """
+            )
+        );
+    }
+
+    @Test
+    void migratesMultilineBeansSchemaLocation() {
+        rewriteRun(
+            spec -> spec.recipeFromResources("com.jackson.mta.foundation.MigrateJakartaDescriptors"),
+            xml(
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <beans xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+                                           http://xmlns.jcp.org/xml/ns/javaee/beans_2_0.xsd"
+                       bean-discovery-mode="all"
+                       version="2.0">
+                    <alternatives/>
+                </beans>
+                """,
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <beans xmlns="https://jakarta.ee/xml/ns/jakartaee"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/beans_4_0.xsd"
+                       bean-discovery-mode="all"
+                       version="4.0">
+                    <alternatives/>
+                </beans>
+                """
+            )
+        );
+    }
+
+    @Test
+    void migratesFacesContextParamNamesInWebXml() {
+        rewriteRun(
+            spec -> spec.recipeFromResources("com.jackson.mta.foundation.MigrateJakartaDescriptors"),
+            xml(
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+                         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+                         version="3.1">
+                    <context-param>
+                        <param-name>javax.faces.PROJECT_STAGE</param-name>
+                        <param-value>Development</param-value>
+                    </context-param>
+                    <servlet>
+                        <servlet-name>Faces Servlet</servlet-name>
+                        <servlet-class>javax.faces.webapp.FacesServlet</servlet-class>
+                    </servlet>
+                </web-app>
+                """,
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+                         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+                         version="6.0">
+                    <context-param>
+                        <param-name>jakarta.faces.PROJECT_STAGE</param-name>
+                        <param-value>Development</param-value>
+                    </context-param>
+                    <servlet>
+                        <servlet-name>Faces Servlet</servlet-name>
+                        <servlet-class>jakarta.faces.webapp.FacesServlet</servlet-class>
+                    </servlet>
+                </web-app>
+                """
+            )
+        );
+    }
+
+    @Test
     void migratesPersistenceDescriptorToJakartaPersistenceThreeOne() {
         rewriteRun(
             spec -> spec.recipeFromResources("com.jackson.mta.foundation.MigrateJakartaDescriptors"),
@@ -646,6 +745,24 @@ class FoundationRecipeTransformationTest implements RewriteTest {
                              version="3.1">
                     <persistence-unit name="migrationShowcasePU" transaction-type="JTA"/>
                 </persistence>
+                """
+            )
+        );
+    }
+
+    @Test
+    void doesNotDuplicateAlreadyMigratedFacesSchemaLocation() {
+        rewriteRun(
+            spec -> spec.recipeFromResources("com.jackson.mta.foundation.MigrateJakartaDescriptors"),
+            xml(
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <faces-config xmlns="https://jakarta.ee/xml/ns/jakartaee"
+                              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                              xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-facesconfig_4_0.xsd"
+                              version="4.0">
+                    <application/>
+                </faces-config>
                 """
             )
         );

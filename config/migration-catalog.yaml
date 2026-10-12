@@ -172,6 +172,9 @@ families:
     - beans_1_1.xsd
     - beans_2_0.xsd
     - beans_3_0.xsd
+    - javax.faces.PROJECT_STAGE
+    - javax.faces.STATE_SAVING_METHOD
+    - javax.faces.INTERPRET_EMPTY_STRING_SUBMITTED_VALUES_AS_NULL
     - http://xmlns.jcp.org/xml/ns/persistence
     - persistence_2_1.xsd
     - persistence_2_2.xsd
