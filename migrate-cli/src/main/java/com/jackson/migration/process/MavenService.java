@@ -9,7 +9,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Locates and invokes the target application Maven wrapper or system Maven for builds and OpenRewrite execution.
+ * Locates and invokes Maven for target-application builds and OpenRewrite execution.
+ * The system Maven on PATH is preferred so Workbench execution matches a developer's
+ * direct {@code mvn} invocation from the same project directory. A compatible Maven Wrapper
+ * is used only when system Maven is unavailable.
  */
 @ApplicationScoped
 public class MavenService {
@@ -17,8 +20,10 @@ public class MavenService {
     @Inject ToolLocator tools;
 
     /**
-     * Executes Maven for the target application, preferring a host-compatible Maven Wrapper and
-     * falling back to a host-compatible system Maven installation.
+     * Executes Maven from the target application's project root, preferring the system
+     * {@code mvn} command on PATH and falling back to a host-compatible project Maven Wrapper.
+     * Running from the project root allows Maven to apply the project's {@code .mvn/maven.config},
+     * {@code .mvn/jvm.config}, and {@code .mvn/extensions.xml} using Maven's normal discovery.
      *
      * @param project Maven project root
      * @param arguments Maven goals and command-line arguments
@@ -28,8 +33,9 @@ public class MavenService {
      * @throws InterruptedException if Maven execution is interrupted
      */
     public CommandResult run(Path project, List<String> arguments, boolean stream) throws IOException, InterruptedException {
-        Path executable = tools.projectMavenWrapper(project).orElseGet(() ->
-                tools.systemMaven().orElseThrow(() -> new IllegalStateException("Maven not found and no mvnw/mvnw.cmd exists in project")));
+        Path executable = tools.systemMaven().orElseGet(() ->
+                tools.projectMavenWrapper(project).orElseThrow(() ->
+                        new IllegalStateException("Maven not found on PATH and no compatible mvnw/mvnw.cmd exists in project")));
 
         List<String> command = new ArrayList<>();
         String name = executable.getFileName().toString().toLowerCase();

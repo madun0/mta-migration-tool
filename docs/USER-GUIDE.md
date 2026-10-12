@@ -32,7 +32,7 @@ git commit -m "chore: configure migration workbench"
 migrate doctor
 ```
 
-`doctor` checks Java 21, Git, Maven/Maven Wrapper, MTA, the Workbench catalog and the local recipe artifact.
+`doctor` checks Java 21, Git, Maven, MTA, the Workbench catalog and the local recipe artifact. It also reports whether the application has a `.mvn/maven.config` file.
 
 ## 4. Assess with MTA
 

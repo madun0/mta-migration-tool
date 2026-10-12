@@ -57,7 +57,7 @@ Example:
 [OK] Java           - 21.0.x
 [OK] Git            - C:\Program Files\Git\cmd\git.exe
 [OK] MTA CLI        - C:\tools\mta\mta-cli.exe
-[OK] Maven          - C:\work\customer-portal\mvnw.cmd
+[OK] Maven          - C:\apache-maven-3.9.12\bin\mvn.cmd
 [OK] Clean Git tree - required before first migrate
 READY
 ```

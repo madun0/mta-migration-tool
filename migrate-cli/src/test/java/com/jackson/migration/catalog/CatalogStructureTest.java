@@ -36,7 +36,6 @@ class CatalogStructureTest {
         assertTrue(catalog.families.size() >= 20);
         assertNotNull(catalog.recipeArtifactCoordinates);
         assertEquals("6.46.1", catalog.rewritePluginVersion);
-        assertTrue(catalog.rewriteRepositoryUrl == null || catalog.rewriteRepositoryUrl.isBlank());
 
         MigrationCatalog.FamilySpec platformBaseline = catalog.families.get("platform-baseline");
         assertNotNull(platformBaseline);

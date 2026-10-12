@@ -26,7 +26,7 @@ The Workbench is intentionally thin:
 - Windows 11
 - Git for Windows / Git Bash (default terminal)
 - JDK 21
-- Maven 3.9.x or a target-project Maven Wrapper
+- Maven 3.9.x on PATH (a target-project Maven Wrapper is used only as a fallback)
 - MTA CLI 8.2 on PATH as `mta-cli.exe` (or set `MTA_CLI`)
 
 No MTA Hub, WSL, Docker/Podman, database, REST API, or web UI is required.
@@ -86,11 +86,11 @@ The standard profile now automates the deterministic portion of the Java 21 / Ja
 
 Generated migration plans use project-relative affected-file paths, show the active OpenRewrite recipes, and distinguish MTA-backed migration tasks from post-review cleanup tasks.
 
-### OpenRewrite repository behavior
+### Maven and OpenRewrite behavior
 
-The default catalog pins `rewrite-maven-plugin` 6.46.1, which is resolvable from Maven Central and is aligned with the Rewrite 8.90.2 core used by the Workbench recipe module. This keeps the default migration workflow credential-free.
+The default catalog pins `rewrite-maven-plugin` 6.46.1, aligned with the Rewrite 8.90.2 core used by the Workbench recipe module. `migrate migrate` invokes Maven from the target application's root directory and does not generate or inject a separate Maven settings file.
 
-`rewriteRepositoryUrl` is optional. Leave it blank for the default Maven Central flow. If a future catalog intentionally points it at an authenticated repository such as Code Genome, configure a Maven `<server>` with id `codegenome` or set `CODE_GENOME_USERNAME` and `CODE_GENOME_TOKEN`; the Workbench will use those credentials only in its temporary Maven settings file.
+The Workbench prefers the system `mvn` command on `PATH`, matching a developer's direct Maven invocation; a project Maven Wrapper is only a fallback when system Maven is unavailable. Maven therefore owns normal project configuration discovery, including `.mvn/maven.config`, `.mvn/jvm.config`, `.mvn/extensions.xml`, user/global `settings.xml`, mirrors, repositories, resolver properties, and corporate Artifactory configuration.
 
 ### MTA analysis mode and project scope
 

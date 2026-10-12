@@ -20,9 +20,6 @@ public class MigrationCatalog {
     /** OpenRewrite Maven plugin version invoked by the workbench. */
     public String rewritePluginVersion;
 
-    /** Repository used to resolve current OpenRewrite Maven plugin releases. */
-    public String rewriteRepositoryUrl;
-
     /** Named migration profiles keyed by CLI/profile identifier. */
     public Map<String, ProfileSpec> profiles = new LinkedHashMap<>();
 

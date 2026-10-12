@@ -18,7 +18,6 @@ import java.util.List;
 @ApplicationScoped
 public class RewriteService {
     @Inject MavenService maven;
-    @Inject RewriteMavenSettingsService settings;
 
     /**
      * Applies the requested OpenRewrite recipes through the target project's Maven build.
@@ -59,23 +58,16 @@ public class RewriteService {
      */
     private void run(Path project, MigrationCatalog catalog, List<String> recipes, String goal)
             throws IOException, InterruptedException {
-        Path temporarySettings = null;
-        try {
-            List<String> args = new ArrayList<>();
-            if (catalog.rewriteRepositoryUrl != null && !catalog.rewriteRepositoryUrl.isBlank()) {
-                temporarySettings = settings.create(catalog.rewriteRepositoryUrl);
-                args.add("-s");
-                args.add(temporarySettings.toString());
-            }
-            args.add("-U");
-            args.add("org.openrewrite.maven:rewrite-maven-plugin:" + catalog.rewritePluginVersion + ":" + goal);
-            args.add("-Drewrite.recipeArtifactCoordinates=" + catalog.recipeArtifactCoordinates);
-            args.add("-Drewrite.activeRecipes=" + String.join(",", recipes));
-            if ("dryRunNoFork".equals(goal)) args.add("-Drewrite.exportDatatables=true");
-            CommandResult result = maven.run(project, args, true);
-            if (!result.success()) throw new IOException("OpenRewrite " + goal + " failed with exit code " + result.exitCode());
-        } finally {
-            if (temporarySettings != null) java.nio.file.Files.deleteIfExists(temporarySettings);
+        List<String> args = new ArrayList<>();
+        args.add("-U");
+        args.add("org.openrewrite.maven:rewrite-maven-plugin:" + catalog.rewritePluginVersion + ":" + goal);
+        args.add("-Drewrite.recipeArtifactCoordinates=" + catalog.recipeArtifactCoordinates);
+        args.add("-Drewrite.activeRecipes=" + String.join(",", recipes));
+        if ("dryRunNoFork".equals(goal)) args.add("-Drewrite.exportDatatables=true");
+
+        CommandResult result = maven.run(project, args, true);
+        if (!result.success()) {
+            throw new IOException("OpenRewrite " + goal + " failed with exit code " + result.exitCode());
         }
     }
 }

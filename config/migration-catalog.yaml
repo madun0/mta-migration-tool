@@ -1,7 +1,6 @@
 version: '1.0'
 recipeArtifactCoordinates: com.jackson.mta:primefaces-openrewrite-recipes:1.0.0-SNAPSHOT
 rewritePluginVersion: 6.46.1
-rewriteRepositoryUrl: ''
 profiles:
   standard:
     description: Full guided migration from JSF 2.2 / PrimeFaces 6.2 toward JBoss EAP 8 / Jakarta Faces 4 / PrimeFaces 16.

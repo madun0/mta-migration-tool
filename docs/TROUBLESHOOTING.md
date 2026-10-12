@@ -46,9 +46,11 @@ Rollback intentionally stops if:
 
 This protects manual developer changes. Commit/stash the manual changes and decide explicitly whether to continue or restore them before rollback.
 
-## Maven Wrapper vs Maven
+## Maven selection and `.mvn/maven.config`
 
-For a target application, the Workbench selects Maven according to the JVM host OS. On Windows it prefers `mvnw.cmd` and executes batch wrappers through `cmd.exe`. On Linux/WSL/macOS it prefers the POSIX `mvnw` wrapper and otherwise falls back to system `mvn`; Windows-only `.cmd` wrappers are ignored on non-Windows hosts. This keeps Git Bash and WSL execution distinct and prevents accidental `cmd.exe` launches from Linux environments.
+For a target application, the Workbench prefers the system `mvn` command on `PATH` so `migrate migrate` uses the same Maven installation and project-level configuration as a direct `mvn` invocation. A host-compatible project Maven Wrapper (`mvnw.cmd` on Windows or `mvnw` on Linux/WSL/macOS) is used only when system Maven is unavailable.
+
+All Maven processes run with the application root as their working directory. The Workbench does not parse, replace, or synthesize `.mvn/maven.config`; Maven loads it normally. With Maven 3.9+, put one argument per line in `.mvn/maven.config`. This is especially important for `-s`/`--settings`, `-D...` resolver properties, `-U`, profiles, and corporate repository options.
 
 
 ## Windows assessment includes `.m2` or unrelated directories

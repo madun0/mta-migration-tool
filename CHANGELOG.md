@@ -1,5 +1,12 @@
 # Changelog
 
+## v31
+
+- Changed Maven execution to prefer the system `mvn` on `PATH`, matching a developer's direct Maven invocation; a project Maven Wrapper is now fallback-only.
+- `migrate migrate` continues to execute Maven from the application root so Maven can load `.mvn/maven.config`, `.mvn/jvm.config`, and `.mvn/extensions.xml` normally.
+- Removed the Workbench-owned temporary Maven settings/repository injection from the `migrate migrate` execution path so OpenRewrite no longer overrides project/user Maven repository configuration.
+- `migrate doctor` now reports the Maven executable selected by the Workbench and whether `.mvn/maven.config` is present.
+
 ## v30
 
 - Added a replacement `MtaServiceFindingScopeTest` using the current MTA-authoritative scope semantics so upgrading by overlay replaces stale pre-v28 test files instead of leaving them behind.

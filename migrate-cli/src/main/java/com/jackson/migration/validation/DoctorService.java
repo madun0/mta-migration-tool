@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Validates that a Windows 11/Git Bash workstation has the required Java, Git, Maven, MTA, project, and recipe prerequisites.
@@ -37,8 +38,11 @@ public class DoctorService {
         check("pom.xml", project.resolve("pom.xml").toString(), Files.exists(project.resolve("pom.xml")), failures);
         check("Git", tools.git().map(Path::toString).orElse("not found"), tools.git().isPresent(), failures);
         check("MTA CLI", tools.mta().map(Path::toString).orElse("not found"), tools.mta().isPresent(), failures);
-        boolean maven = tools.projectMavenWrapper(project).isPresent() || tools.systemMaven().isPresent();
-        check("Maven", tools.projectMavenWrapper(project).or(tools::systemMaven).map(Path::toString).orElse("not found"), maven, failures);
+        Optional<Path> selectedMaven = tools.systemMaven().or(() -> tools.projectMavenWrapper(project));
+        check("Maven", selectedMaven.map(Path::toString).orElse("not found"), selectedMaven.isPresent(), failures);
+        Path mavenConfig = project.resolve(".mvn/maven.config");
+        System.out.printf("%-24s - %s%n", "[INFO] Maven config",
+                Files.isRegularFile(mavenConfig) ? mavenConfig.toString() : "not present");
         try {
             check("Clean Git tree", "required before first migrate", git.isClean(project), failures);
         } catch (Exception e) {
