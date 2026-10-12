@@ -44,8 +44,9 @@ public class MtaService {
      * MTA is launched from an isolated temporary working directory rather than the application's
      * parent directory. This is particularly important on Windows, where Maven/provider discovery
      * can otherwise observe unrelated sibling directories. Workbench-owned {@code .migration}
-     * state is temporarily moved outside the application root while MTA runs so previous
-     * {@code output.yaml} reports and checkpoints cannot be rediscovered as application source.
+     * state and Maven {@code target/} directories are temporarily moved outside the application
+     * root while MTA runs so previous reports, checkpoints, and generated build copies cannot be
+     * rediscovered as application source.
      * MTA remains authoritative for the source/dependency scope selected by {@code migration.yaml}.</p>
      *
      * @param project application project root to analyze
@@ -122,7 +123,8 @@ public class MtaService {
 
         try {
             CommandResult result;
-            try (HiddenWorkbenchState ignored = hideWorkbenchState(projectRoot)) {
+            try (HiddenWorkbenchState ignored = hideWorkbenchState(projectRoot);
+                 HiddenGeneratedDirectories ignoredBuildOutput = hideGeneratedDirectories(projectRoot)) {
                 result = runner.runStreaming(executionDirectory, command);
             } finally {
                 deleteQuietly(executionDirectory);
@@ -177,6 +179,97 @@ public class MtaService {
                 "." + projectRoot.getFileName() + "-mta-workbench-state-" + java.util.UUID.randomUUID());
         Files.move(migrationDirectory, hiddenDirectory);
         return new HiddenWorkbenchState(migrationDirectory, hiddenDirectory);
+    }
+
+    /**
+     * Temporarily moves Maven build-output directories outside the analyzed application tree.
+     * MTA scans the full input directory recursively and can otherwise report migration findings
+     * from generated copies such as {@code target/classes/META-INF/persistence.xml}. Those files
+     * are build products, not migration sources, and can duplicate or stale-shadow the real
+     * descriptor under {@code src/main}.
+     */
+    static HiddenGeneratedDirectories hideGeneratedDirectories(Path projectRoot) throws IOException {
+        List<Path> candidates;
+        try (var paths = Files.walk(projectRoot)) {
+            candidates = paths
+                    .filter(Files::isDirectory)
+                    .filter(path -> !path.equals(projectRoot))
+                    .filter(path -> path.getFileName() != null
+                            && "target".equalsIgnoreCase(path.getFileName().toString()))
+                    .sorted(Comparator.comparingInt(Path::getNameCount))
+                    .toList();
+        }
+
+        // If a target directory contains another target directory, moving the outer directory is
+        // sufficient. Keep only the shallowest generated roots.
+        List<Path> selected = new ArrayList<>();
+        for (Path candidate : candidates) {
+            boolean nestedInSelected = selected.stream().anyMatch(candidate::startsWith);
+            if (!nestedInSelected) selected.add(candidate);
+        }
+        if (selected.isEmpty()) return new HiddenGeneratedDirectories(null, List.of());
+
+        Path stagingRoot = projectRoot.resolveSibling(
+                "." + projectRoot.getFileName() + "-mta-build-output-" + java.util.UUID.randomUUID());
+        Files.createDirectories(stagingRoot);
+        List<MovedDirectory> moved = new ArrayList<>();
+        try {
+            for (Path original : selected) {
+                Path hidden = stagingRoot.resolve(projectRoot.relativize(original));
+                Path parent = hidden.getParent();
+                if (parent != null) Files.createDirectories(parent);
+                Files.move(original, hidden);
+                moved.add(new MovedDirectory(original, hidden));
+            }
+            return new HiddenGeneratedDirectories(stagingRoot, List.copyOf(moved));
+        } catch (IOException failure) {
+            restoreMovedDirectories(moved);
+            deleteQuietly(stagingRoot);
+            throw failure;
+        }
+    }
+
+    private record MovedDirectory(Path original, Path hidden) {}
+
+    /** Restores Maven build output that was hidden while MTA analyzed the source tree. */
+    static final class HiddenGeneratedDirectories implements AutoCloseable {
+        private final Path stagingRoot;
+        private final List<MovedDirectory> moved;
+        private boolean restored;
+
+        HiddenGeneratedDirectories(Path stagingRoot, List<MovedDirectory> moved) {
+            this.stagingRoot = stagingRoot;
+            this.moved = moved;
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (restored) return;
+            restoreMovedDirectories(moved);
+            deleteQuietly(stagingRoot);
+            restored = true;
+        }
+    }
+
+    private static void restoreMovedDirectories(List<MovedDirectory> moved) throws IOException {
+        IOException first = null;
+        for (int i = moved.size() - 1; i >= 0; i--) {
+            MovedDirectory entry = moved.get(i);
+            try {
+                if (!Files.exists(entry.hidden())) continue;
+                if (Files.exists(entry.original())) {
+                    throw new IOException("Cannot restore generated build output because MTA recreated "
+                            + entry.original() + " while analysis was running.");
+                }
+                Path parent = entry.original().getParent();
+                if (parent != null) Files.createDirectories(parent);
+                Files.move(entry.hidden(), entry.original());
+            } catch (IOException e) {
+                if (first == null) first = e;
+                else first.addSuppressed(e);
+            }
+        }
+        if (first != null) throw first;
     }
 
     /** Restores a temporarily hidden Workbench state directory. */
@@ -392,8 +485,8 @@ public class MtaService {
         return requested;
     }
 
-    /** Best-effort cleanup for the isolated MTA process working directory. */
-    private void deleteQuietly(Path directory) {
+    /** Best-effort cleanup for isolated MTA working and staging directories. */
+    private static void deleteQuietly(Path directory) {
         if (directory == null || !Files.exists(directory)) return;
         try (var paths = Files.walk(directory)) {
             paths.sorted(Comparator.reverseOrder()).forEach(path -> {

@@ -1,3 +1,14 @@
+## Unreleased - MTA cleanup compile fix
+
+- Fixed the CLI compilation regression in `MtaService`: static MTA isolation helpers now call a static `deleteQuietly(Path)` cleanup helper.
+- No migration behavior changed; the descriptor recipes, `.migration` isolation, Maven `target/` isolation, and `1.0.0-SNAPSHOT` recipe coordinate remain unchanged.
+
+## Unreleased - MTA descriptor verification isolation
+
+- Exclude Maven `target/` trees from every MTA assessment by temporarily moving them outside the application root while `mta-cli analyze` runs, then restoring them byte-for-byte. This prevents generated/stale descriptor copies such as `target/classes/META-INF/persistence.xml` from re-triggering Java EE XSD findings.
+- Strengthen the `jakarta-descriptors` verification gate to reject any remaining legacy JCP/Java EE XML namespace under application source, not only a fixed list of descriptor XSD filenames.
+- Keep the recipe artifact coordinate at `com.jackson.mta:primefaces-openrewrite-recipes:1.0.0-SNAPSHOT`.
+
 # Changelog
 
 ## SNAPSHOT MTA verification isolation

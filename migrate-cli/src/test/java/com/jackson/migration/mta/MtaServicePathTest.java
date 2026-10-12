@@ -57,6 +57,28 @@ class MtaServicePathTest {
     }
 
     @Test
+    void mavenBuildOutputIsHiddenDuringMtaAnalysisAndRestoredAfterward() throws Exception {
+        Path project = Files.createDirectories(temp.resolve("workspace/multi-module-app"));
+        Path rootTarget = Files.createDirectories(project.resolve("target/classes/META-INF"));
+        Path moduleTarget = Files.createDirectories(project.resolve("module-a/target/classes"));
+        Files.writeString(rootTarget.resolve("persistence.xml"), "legacy generated persistence descriptor");
+        Files.writeString(moduleTarget.resolve("generated.txt"), "generated module output");
+
+        try (MtaService.HiddenGeneratedDirectories ignored = MtaService.hideGeneratedDirectories(project)) {
+            assertFalse(Files.exists(project.resolve("target")));
+            assertFalse(Files.exists(project.resolve("module-a/target")));
+            assertTrue(Files.exists(project.resolve("module-a")));
+        }
+
+        assertEquals(
+                "legacy generated persistence descriptor",
+                Files.readString(project.resolve("target/classes/META-INF/persistence.xml")));
+        assertEquals(
+                "generated module output",
+                Files.readString(project.resolve("module-a/target/classes/generated.txt")));
+    }
+
+    @Test
     void stagedMtaOutputReplacesOnlyRequestedOutputDirectory() throws Exception {
         Path project = Files.createDirectories(temp.resolve("workspace/output-app"));
         Path migration = Files.createDirectories(project.resolve(".migration"));

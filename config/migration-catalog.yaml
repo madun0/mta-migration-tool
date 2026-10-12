@@ -161,6 +161,8 @@ families:
     cleanupRecipes: []
     guide: docs/FOUNDATION-MIGRATION.md
     forbiddenPatterns:
+    - http://xmlns.jcp.org/xml/ns/
+    - http://java.sun.com/xml/ns/
     - http://xmlns.jcp.org/xml/ns/javaee
     - http://java.sun.com/xml/ns/javaee
     - web-app_3_1.xsd

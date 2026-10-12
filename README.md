@@ -130,3 +130,9 @@ MTA findings: <n>
 ```
 
 This count represents the raw number of incidents in MTA `output.yaml` under `violations.<rule>.incidents[]`. `.migration/assessment/findings.json` mirrors those incidents one-for-one. Workbench-only deduplication and generated-file cleanup are stored separately in `.migration/assessment/planning-findings.json` for planning and residual classification. Insights and dependency inventory remain diagnostic artifacts and are not presented as additional findings totals.
+
+
+### MTA source-only verification boundary
+
+During `assess` and `verify`, the Workbench temporarily moves `.migration` and every Maven `target/` directory outside the application tree before invoking MTA. This prevents historical reports and generated descriptor copies from being evaluated as migration source. The directories are restored immediately after MTA exits.
+
