@@ -50,7 +50,7 @@ public class MigrationConfig {
          * classifies as known open-source libraries. This is a separate MTA control from
          * {@code mode: full}. It is only passed to MTA when full mode is selected.
          */
-        public boolean analyzeKnownLibraries = true;
+        public boolean analyzeKnownLibraries = false;
 
         /**
          * Optional Maven settings file used by MTA's Java dependency analysis. Relative paths are

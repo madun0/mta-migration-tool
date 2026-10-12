@@ -65,7 +65,7 @@ Current Workbench behavior is:
 1. resolve the current working directory as the application root;
 2. canonicalize that root with `Path.toRealPath()` before MTA analysis;
 3. launch MTA from an isolated temporary working directory instead of the application parent;
-4. in `source-only` mode, retain normalized findings only for files inside the canonical application root; and
+4. let MTA itself enforce `source-only` versus `full` analysis scope; and
 5. always discard Workbench/build metadata paths such as `.migration/`, `target/`, and `.git/`.
 
 The assessment log prints the effective root:
@@ -103,14 +103,14 @@ mta:
   mode: source-only
 ```
 
-`source-only` is the default and keeps normalized findings inside the selected application root. `full` analyzes
+`source-only` is the default and asks MTA to analyze application source only. `full` analyzes
 source and dependencies and can legitimately inspect and report findings from the Maven local repository, parent
 POMs, or reactor modules:
 
 ```yaml
 mta:
   mode: full
-  analyzeKnownLibraries: true
+  analyzeKnownLibraries: false
   mavenSettings: ""
   disableMavenSearch: false
 ```

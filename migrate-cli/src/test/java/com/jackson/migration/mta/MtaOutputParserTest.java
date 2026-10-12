@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MtaOutputParserTest {
@@ -43,23 +42,6 @@ class MtaOutputParserTest {
         assertEquals(12, findings.get(0).line());
     }
 
-    @Test
-    void stillParsesDirectRuleIdShape() throws Exception {
-        Path report = temp.resolve("output.yaml");
-        Files.writeString(report, """
-                - ruleID: primefaces-calendar-0001
-                  category: mandatory
-                  incidents:
-                    - uri: file:///workspace/view.xhtml
-                      lineNumber: 4
-                      message: Migrate p:calendar
-                """);
-
-        List<MigrationFinding> findings = new MtaOutputParser().parse(report);
-
-        assertEquals(1, findings.size());
-        assertEquals("primefaces-calendar-0001", findings.get(0).ruleId());
-    }
     @Test
     void ignoresGeneratedWorkbenchAndBuildFindingsButRetainsMavenDependencies() throws Exception {
         Path report = temp.resolve("output.yaml");
@@ -114,59 +96,6 @@ class MtaOutputParserTest {
         assertEquals(1, findings.size());
         assertEquals("primefaces-schedule-0001", findings.get(0).ruleId());
         assertEquals(33, findings.get(0).line());
-    }
-
-    @Test
-    void filtersFindingsOutsideSelectedApplicationRoot() throws Exception {
-        Path project = Files.createDirectories(temp.resolve("workspace/app"));
-        Path source = Files.createDirectories(project.resolve("src/main/java/demo"))
-                .resolve("Bean.java");
-        Files.writeString(source, "class Bean {}\n");
-
-        Path sibling = Files.createDirectories(temp.resolve("workspace/unrelated/src"))
-                .resolve("Other.java");
-        Files.writeString(sibling, "class Other {}\n");
-
-        Path mavenRepo = Files.createDirectories(temp.resolve("home/.m2/repository/demo/lib/1.0"))
-                .resolve("lib-1.0.jar");
-        Files.writeString(mavenRepo, "not-a-real-jar");
-
-        List<MigrationFinding> scoped = new MtaOutputParser().filterToProjectRoot(List.of(
-                new MigrationFinding("inside", "", source.toUri().toString(), 1, "mandatory"),
-                new MigrationFinding("sibling", "", sibling.toUri().toString(), 1, "mandatory"),
-                new MigrationFinding("maven", "", mavenRepo.toUri().toString(), 1, "mandatory")
-        ), project.toRealPath());
-
-        assertEquals(1, scoped.size());
-        assertEquals("inside", scoped.get(0).ruleId());
-    }
-
-    @Test
-    void windowsAndGitBashPathsUseSameApplicationBoundary() {
-        String root = "C:\\Users\\madun\\wksp\\showcase";
-
-        assertTrue(MtaOutputParser.isWithinProjectPath(
-                root,
-                "file:///C:/Users/madun/wksp/showcase/src/main/java/demo/Bean.java"));
-        assertTrue(MtaOutputParser.isWithinProjectPath(
-                root,
-                "/c/Users/madun/wksp/showcase/src/main/webapp/index.xhtml"));
-        assertFalse(MtaOutputParser.isWithinProjectPath(
-                root,
-                "file:///C:/Users/madun/wksp/unrelated/src/main/java/demo/Other.java"));
-        assertFalse(MtaOutputParser.isWithinProjectPath(
-                root,
-                "file:///C:/Users/madun/wksp/showcase-other/src/main/java/demo/Other.java"));
-        assertFalse(MtaOutputParser.isWithinProjectPath(
-                root,
-                "file:///C:/Users/madun/.m2/repository/org/example/lib/1.0/lib-1.0.jar"));
-    }
-
-    @Test
-    void relativeMtaFindingPathsAreScopedToProjectRoot() {
-        String root = "C:/work/showcase";
-        assertTrue(MtaOutputParser.isWithinProjectPath(root, "src/main/java/demo/Bean.java"));
-        assertFalse(MtaOutputParser.isWithinProjectPath(root, "C:/work/other/Bean.java"));
     }
 
     @Test
@@ -237,7 +166,8 @@ class MtaOutputParserTest {
         MtaOutputParser.ParsedReport parsed = new MtaOutputParser().parseReport(report);
 
         assertEquals(5, parsed.violationIncidentCount());
-        assertEquals(4, parsed.findings().size());
+        assertEquals(5, parsed.incidents().size());
+        assertEquals(4, parsed.planningFindings().size());
     }
 
 }

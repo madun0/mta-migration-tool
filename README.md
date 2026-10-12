@@ -95,14 +95,14 @@ The default catalog pins `rewrite-maven-plugin` 6.46.1, which is resolvable from
 ### MTA analysis mode and project scope
 
 MTA analysis mode is configured only in the application's `migration.yaml`. The default is `source-only`,
-which keeps normalized findings within the selected application tree. Set `mode: full` when dependency-aware
+which asks MTA to analyze application source only. Set `mode: full` when dependency-aware
 analysis is required; full mode intentionally preserves dependency findings from locations such as the local
 Maven repository and parent/reactor modules. There is no command-line mode override.
 
 ```yaml
 mta:
   mode: full
-  analyzeKnownLibraries: true
+  analyzeKnownLibraries: false
   # Optional when MTA must use a non-default corporate Maven settings file.
   mavenSettings: "C:/Users/me/.m2/settings.xml"
   # Optional fallback when the remote Maven search index is blocked/unavailable.
@@ -110,7 +110,7 @@ mta:
 ```
 
 `mode: full` enables dependency-aware provider analysis, but MTA treats analysis of known open-source libraries as
-a separate option. The Workbench defaults `analyzeKnownLibraries` to `true` for comprehensive full-mode assessments.
+a separate option. The Workbench defaults `analyzeKnownLibraries` to `false`, matching the MTA CLI default. Enable it only when dependency findings from known open-source libraries are intentionally required.
 `mavenSettings` is passed directly to MTA as `--maven-settings`. Use `disableMavenSearch: true` only when Maven
 search is unavailable; dependency classification is then less reliable and may produce more incidents.
 
@@ -124,4 +124,4 @@ Assessment output intentionally exposes one primary count:
 MTA findings: <n>
 ```
 
-This count represents the raw number of incidents in MTA `output.yaml` under `violations.<rule>.incidents[]`, matching the report-oriented MTA view. `.migration/assessment/findings.json` remains a deduplicated, normalized planning artifact and may contain fewer entries. Insights and dependency inventory remain available as diagnostic artifacts when MTA produces them, but they are not presented as additional findings totals.
+This count represents the raw number of incidents in MTA `output.yaml` under `violations.<rule>.incidents[]`. `.migration/assessment/findings.json` mirrors those incidents one-for-one. Workbench-only deduplication and generated-file cleanup are stored separately in `.migration/assessment/planning-findings.json` for planning and residual classification. Insights and dependency inventory remain diagnostic artifacts and are not presented as additional findings totals.

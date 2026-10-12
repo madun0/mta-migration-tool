@@ -1,5 +1,25 @@
 # Changelog
 
+## v30
+
+- Added a replacement `MtaServiceFindingScopeTest` using the current MTA-authoritative scope semantics so upgrading by overlay replaces stale pre-v28 test files instead of leaving them behind.
+- No production behavior changes from v29.
+
+## v29
+
+- Removed the obsolete direct `ruleID` parser-shape regression test; MTA 8.3 `violations.<rule>.incidents[]` is the authoritative report structure.
+- No production finding semantics changed from v28. `findings.json` remains one record per MTA violation incident, while `planning-findings.json` remains the Workbench-normalized planning artifact.
+- Note: older worktrees may still contain `MtaServiceFindingScopeTest.java` from pre-v28 releases. That test is not part of the v28/v29 project and must be deleted when upgrading in place because archive extraction does not remove stale files.
+
+## v28
+
+- Made `findings.json` a one-record-per-MTA-violation-incident mirror of `output.yaml`; no Workbench deduplication or post-analysis path scoping changes the MTA finding set.
+- Added `planning-findings.json` for Workbench-only deduplication and generated-file cleanup used by planning and residual classification.
+- Removed post-MTA source/full path filtering; `mta.mode` is now enforced only by MTA itself.
+- Made `--enable-default-rulesets=true` explicit when invoking MTA alongside Workbench custom rules.
+- Changed `analyzeKnownLibraries` default to `false` to match native MTA CLI behavior.
+- Log the exact MTA command so direct CLI comparisons use identical arguments.
+
 ## v27
 
 - Removed the unnecessary CLI regression test that prohibited `--project` from being reintroduced.

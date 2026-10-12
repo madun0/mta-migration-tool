@@ -12,7 +12,7 @@ mta:
   # Supported values: source-only or full.
   mode: source-only
   # In full mode, also analyze dependencies MTA classifies as known open-source libraries.
-  analyzeKnownLibraries: true
+  analyzeKnownLibraries: false
   # Optional: path to Maven settings used by MTA dependency resolution.
   mavenSettings: ""
   # Optional fallback for restricted/disconnected Maven-search environments.

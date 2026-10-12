@@ -7,25 +7,21 @@ import org.yaml.snakeyaml.LoaderOptions;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;
-import java.util.regex.Pattern;
 import java.util.Set;
 
 /**
- * Parses MTA {@code output.yaml} and normalizes rule incidents into deduplicated migration findings.
+ * Parses MTA {@code output.yaml} into exact report incidents plus normalized planning findings.
  *
- * <p>MTA analyzer output represents matched rules primarily as entries beneath a
- * {@code violations} object, where the map key is the rule ID. Older/custom output can also
- * expose a {@code ruleID} field directly. This parser supports both shapes so that planning does
- * not silently lose valid MTA findings.</p>
+ * <p>MTA 8.3 analyzer output represents matched rules as entries beneath a
+ * {@code violations} object, where the map key is the rule ID. The Workbench treats that
+ * structure as authoritative so its findings stay aligned with the MTA report.</p>
  */
 @ApplicationScoped
 public class MtaOutputParser {
@@ -52,14 +48,14 @@ public class MtaOutputParser {
     }
 
     /**
-     * Parses an MTA {@code output.yaml} report and recursively extracts deduplicated incidents.
+     * Parses an MTA {@code output.yaml} report and returns normalized planning findings.
      *
      * @param outputYaml path to the MTA YAML report
      * @return normalized findings; an empty list when the report does not exist
      * @throws IOException if the report exists but cannot be parsed
      */
     public List<MigrationFinding> parse(Path outputYaml) throws IOException {
-        return parseReport(outputYaml).findings();
+        return parseReport(outputYaml).planningFindings();
     }
 
     /**
@@ -83,49 +79,65 @@ public class MtaOutputParser {
      * @throws IOException if the report exists but cannot be parsed
      */
     public ParsedReport parseReport(Path outputYaml) throws IOException {
-        if (!Files.exists(outputYaml)) return new ParsedReport(List.of(), List.of(), 0);
+        if (!Files.exists(outputYaml)) {
+            return new ParsedReport(List.of(), List.of(), List.of(), 0);
+        }
         JsonNode root = yaml.readTree(outputYaml.toFile());
 
-        List<MigrationFinding> findings = new ArrayList<>();
-        scan(root, findings, new HashSet<>());
+        // Keep one record for every MTA violation incident exactly as output.yaml reports it.
+        // This list is the source of truth for findings.json and the user-facing MTA count.
+        List<MigrationFinding> incidents = new ArrayList<>();
+        scanViolationIncidents(root, incidents);
+
+        // Planning is intentionally separate: generated-file noise is removed and duplicate
+        // incidents are collapsed so one repeated analyzer record cannot multiply migration work.
+        List<MigrationFinding> planningFindings = deduplicate(filterGeneratedFindings(incidents));
 
         List<MigrationFinding> insights = new ArrayList<>();
         scanInsights(root, insights, new HashSet<>());
 
         return new ParsedReport(
-                List.copyOf(filterGeneratedFindings(findings)),
+                List.copyOf(incidents),
+                List.copyOf(planningFindings),
                 List.copyOf(filterGeneratedFindings(insights)),
-                countViolationIncidents(root));
+                incidents.size());
     }
 
     /** Parsed MTA report data used by assessment without reparsing a potentially large YAML file. */
     public record ParsedReport(
-            List<MigrationFinding> findings,
+            List<MigrationFinding> incidents,
+            List<MigrationFinding> planningFindings,
             List<MigrationFinding> insights,
             int violationIncidentCount) {
     }
 
-    /** Counts raw MTA violation incidents recursively across all application/report sections. */
-    private int countViolationIncidents(JsonNode node) {
-        if (node == null) return 0;
-        int count = 0;
+    /**
+     * Recursively extracts exactly the incidents reported beneath MTA 8.3 {@code violations}
+     * maps. No Workbench deduplication or path scoping is applied here.
+     */
+    private void scanViolationIncidents(JsonNode node, List<MigrationFinding> out) {
+        if (node == null) return;
         if (node.isObject()) {
             JsonNode violations = node.get("violations");
             if (violations != null && violations.isObject()) {
                 for (Map.Entry<String, JsonNode> entry : violations.properties()) {
-                    JsonNode incidents = entry.getValue().get("incidents");
-                    if (incidents != null && incidents.isArray()) count += incidents.size();
+                    JsonNode rule = entry.getValue();
+                    JsonNode ruleIncidents = rule.get("incidents");
+                    if (ruleIncidents != null && ruleIncidents.isArray()) {
+                        for (JsonNode incident : ruleIncidents) {
+                            out.add(finding(entry.getKey(), rule, incident));
+                        }
+                    }
                 }
             }
             for (Map.Entry<String, JsonNode> field : node.properties()) {
                 if (!"violations".equals(field.getKey())) {
-                    count += countViolationIncidents(field.getValue());
+                    scanViolationIncidents(field.getValue(), out);
                 }
             }
         } else if (node.isArray()) {
-            for (JsonNode child : node) count += countViolationIncidents(child);
+            for (JsonNode child : node) scanViolationIncidents(child, out);
         }
-        return count;
     }
 
     /** Recursively extracts entries beneath MTA's insights maps. */
@@ -154,49 +166,6 @@ public class MtaOutputParser {
         }
     }
 
-    /** Recursively visits arbitrary MTA report nodes and extracts rule incidents. */
-    private void scan(JsonNode node, List<MigrationFinding> out, Set<String> seen) {
-        if (node == null) return;
-        if (node.isObject()) {
-            JsonNode violations = node.get("violations");
-            if (violations != null && violations.isObject()) {
-                Set<Map.Entry<String, JsonNode>> properties = violations.properties();
-                Iterator<Map.Entry<String, JsonNode>> iterator = properties.iterator();
-                while (iterator.hasNext()) {
-                    Map.Entry<String, JsonNode> entry = iterator.next();
-                    extractViolation(entry.getKey(), entry.getValue(), out, seen);
-                }
-            }
-
-            String ruleId = text(node, "ruleID", "ruleId", "rule");
-            if (ruleId != null) {
-                extractViolation(ruleId, node, out, seen);
-            }
-
-            Set<Map.Entry<String, JsonNode>> properties = node.properties();
-            Iterator<Map.Entry<String, JsonNode>> iterator = properties.iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<String, JsonNode> field = iterator.next();
-                if (!"violations".equals(field.getKey())) {
-                    scan(field.getValue(), out, seen);
-                }
-            }
-        } else if (node.isArray()) {
-            for (JsonNode child : node) scan(child, out, seen);
-        }
-    }
-
-    /** Extracts one MTA violation node whose rule ID may have come from a map key. */
-    private void extractViolation(String ruleId, JsonNode rule, List<MigrationFinding> out, Set<String> seen) {
-        JsonNode incidents = rule.get("incidents");
-        if (incidents != null && incidents.isArray()) {
-            for (JsonNode incident : incidents) add(out, seen, finding(ruleId, rule, incident));
-        } else {
-            // Some custom/legacy output represents the rule node itself as the incident.
-            add(out, seen, finding(ruleId, rule, rule));
-        }
-    }
-
     /** Builds one normalized finding from a rule node and an incident node. */
     private MigrationFinding finding(String ruleId, JsonNode rule, JsonNode incident) {
         String message = text(incident, "message", "description");
@@ -208,8 +177,7 @@ public class MtaOutputParser {
     }
 
     /**
-     * Removes findings that point at Workbench-generated or build-generated files. Dependency
-     * findings are intentionally preserved here and are scoped later according to MTA mode.
+     * Removes findings that point at Workbench-generated or build-generated files. Dependency findings are intentionally preserved here; MTA itself determines analysis scope.
      * MTA output can contain embedded source snippets, and when the assessment
      * directory lives beneath the analyzed project a later assessment can rediscover those snippets
      * as if they were application files.
@@ -224,97 +192,6 @@ public class MtaOutputParser {
                 .toList();
     }
 
-    /**
-     * Keeps only findings that belong to the selected application root.
-     *
-     * <p>This is the {@code source-only} finding boundary. Full mode intentionally does not apply
-     * this filter because dependency, parent-model, and reactor-module incidents are part of the
-     * requested result. File-less/global findings are retained because they cannot be scoped to a
-     * source path.</p>
-     *
-     * @param findings normalized MTA findings
-     * @param projectRoot canonical application project root
-     * @return findings whose source path is inside {@code projectRoot}, plus file-less findings
-     */
-    public List<MigrationFinding> filterToProjectRoot(List<MigrationFinding> findings, Path projectRoot) {
-        if (findings == null || findings.isEmpty()) return List.of();
-        String root = normalizePathKey(projectRoot.toAbsolutePath().normalize().toString());
-        return findings.stream()
-                .filter(finding -> finding.file() == null
-                        || finding.file().isBlank()
-                        || isWithinProjectPath(root, finding.file()))
-                .toList();
-    }
-
-    /**
-     * Tests whether an MTA file reference is inside an application root.
-     *
-     * <p>The comparison understands native Windows paths, {@code file:///C:/...} URIs, Git Bash
-     * {@code /c/...} paths, and POSIX paths. Windows drive paths are compared case-insensitively
-     * and path-segment boundaries prevent a project such as {@code C:/work/app} from accepting
-     * {@code C:/work/app-other}.</p>
-     */
-    static boolean isWithinProjectPath(String projectRoot, String findingFile) {
-        String root = normalizePathKey(projectRoot);
-        String file = normalizePathKey(findingFile);
-        if (root.isBlank() || file.isBlank()) return false;
-
-        if (!isAbsolutePathKey(file)) {
-            file = normalizePathKey(root + "/" + file);
-        }
-
-        return file.equals(root) || file.startsWith(root + "/");
-    }
-
-    /** Converts URI/native/Git-Bash path spellings into a stable comparison key. */
-    static String normalizePathKey(String raw) {
-        if (raw == null || raw.isBlank()) return "";
-        String value = raw.trim();
-
-        if (value.regionMatches(true, 0, "file:", 0, 5)) {
-            try {
-                URI uri = URI.create(value);
-                if ("file".equalsIgnoreCase(uri.getScheme())) {
-                    String authority = uri.getAuthority();
-                    String path = uri.getPath();
-                    value = authority == null || authority.isBlank()
-                            ? path
-                            : "//" + authority + path;
-                }
-            } catch (IllegalArgumentException ignored) {
-                // Fall through to conservative string normalization.
-            }
-        }
-
-        value = value.replace('\\', '/');
-        value = value.replaceAll("/{2,}", "/");
-
-        // file:///C:/... becomes /C:/... after URI decoding.
-        if (value.matches("^/[A-Za-z]:/.*")) {
-            value = value.substring(1);
-        }
-
-        // Git Bash /c/work/app -> C:/work/app.
-        if (value.matches("^/[A-Za-z]/.*")) {
-            value = Character.toUpperCase(value.charAt(1)) + ":" + value.substring(2);
-        }
-
-        while (value.length() > 1 && value.endsWith("/")) {
-            value = value.substring(0, value.length() - 1);
-        }
-
-        if (WINDOWS_DRIVE.matcher(value).matches()) {
-            value = value.toLowerCase(Locale.ROOT);
-        }
-        return value;
-    }
-
-    private static final Pattern WINDOWS_DRIVE = Pattern.compile("^[A-Za-z]:/.*");
-
-    private static boolean isAbsolutePathKey(String value) {
-        return value.startsWith("/") || WINDOWS_DRIVE.matcher(value).matches();
-    }
-
     /** Returns true when a finding path belongs to Workbench- or build-generated metadata. */
     private boolean isGeneratedPath(String file) {
         if (file == null || file.isBlank()) return false;
@@ -322,6 +199,14 @@ public class MtaOutputParser {
         return normalized.contains("/.migration/")
                 || normalized.contains("/target/")
                 || normalized.contains("/.git/");
+    }
+
+    /** Deduplicates findings by rule/file/line/message while preserving first-seen order. */
+    private List<MigrationFinding> deduplicate(List<MigrationFinding> findings) {
+        List<MigrationFinding> out = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (MigrationFinding finding : findings) add(out, seen, finding);
+        return out;
     }
 
     /** Adds a finding only when its rule/file/line/message identity has not been seen. */
