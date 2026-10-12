@@ -276,6 +276,92 @@ class FoundationRecipeTransformationTest implements RewriteTest {
     }
 
     @Test
+    void migratesJavaxInjectDependencyToJakartaInject() {
+        rewriteRun(
+            spec -> spec.recipeFromResources("com.jackson.mta.foundation.MigrateJakartaDependencies"),
+            pomXml(
+                """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>example</groupId>
+                    <artifactId>inject-app</artifactId>
+                    <version>1.0</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>javax.inject</groupId>
+                            <artifactId>javax.inject</artifactId>
+                            <version>1</version>
+                        </dependency>
+                    </dependencies>
+                </project>
+                """,
+                """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>example</groupId>
+                    <artifactId>inject-app</artifactId>
+                    <version>1.0</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>jakarta.inject</groupId>
+                            <artifactId>jakarta.inject-api</artifactId>
+                            <version>2.0.1</version>
+                            <scope>provided</scope>
+                        </dependency>
+                        <dependency>
+                            <groupId>jakarta.platform</groupId>
+                            <artifactId>jakarta.jakartaee-api</artifactId>
+                            <version>10.0.0</version>
+                            <scope>provided</scope>
+                        </dependency>
+                    </dependencies>
+                </project>
+                """,
+                spec -> spec.afterRecipe(pom -> {
+                    assertJakartaInjectDependency(pom);
+                    assertJakartaEePlatformDependency(pom);
+                })
+            )
+        );
+    }
+
+    @Test
+    void migratesJavaxInjectImportToJakartaInject() {
+        String oldInject = """
+                package javax.inject;
+                public @interface Inject {}
+                """;
+        String newInject = """
+                package jakarta.inject;
+                public @interface Inject {}
+                """;
+
+        rewriteRun(
+            spec -> spec
+                .recipeFromResources("com.jackson.mta.foundation.MigrateJavaxImports")
+                .parser(JavaParser.fromJavaVersion().dependsOn(oldInject, newInject)),
+            java(
+                """
+                import javax.inject.Inject;
+
+                class Example {
+                    @Inject
+                    Object dependency;
+                }
+                """,
+                """
+                import jakarta.inject.Inject;
+
+                class Example {
+                    @Inject
+                    Object dependency;
+                }
+                """
+            )
+        );
+    }
+
+    @Test
     void ensuresJakartaFacesCompileApiWithProvidedScope() {
         rewriteRun(
             spec -> spec.recipeFromResources("com.jackson.mta.foundation.EnsureJakartaFacesCompileApi"),
@@ -568,6 +654,35 @@ class FoundationRecipeTransformationTest implements RewriteTest {
                 "Jakarta Servlet API must be version 6.0.0");
         assertTrue(dependency != null && dependency.contains("<scope>provided</scope>"),
                 "Jakarta Servlet API must use provided scope for the EAP runtime");
+    }
+
+    /**
+     * Verifies an explicitly migrated Jakarta Dependency Injection API dependency.
+     *
+     * @param pom rewritten Maven POM
+     */
+    private static void assertJakartaInjectDependency(Xml.Document pom) {
+        String xml = pom.printAll();
+        Pattern injectDependency = Pattern.compile(
+                "<dependency>\\s*" +
+                "<groupId>jakarta\\.inject</groupId>\\s*" +
+                "<artifactId>jakarta\\.inject-api</artifactId>" +
+                ".*?</dependency>",
+                Pattern.DOTALL);
+
+        Matcher matcher = injectDependency.matcher(xml);
+        int matches = 0;
+        String dependency = null;
+        while (matcher.find()) {
+            matches++;
+            dependency = matcher.group();
+        }
+
+        assertEquals(1, matches, "Expected exactly one jakarta.inject:jakarta.inject-api dependency");
+        assertTrue(dependency != null && dependency.contains("<version>2.0.1</version>"),
+                "Jakarta Inject API must be version 2.0.1");
+        assertTrue(dependency != null && dependency.contains("<scope>provided</scope>"),
+                "Jakarta Inject API must use provided scope for the EAP runtime");
     }
 
     /**

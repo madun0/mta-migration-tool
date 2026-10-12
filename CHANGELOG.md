@@ -1,5 +1,14 @@
 # Changelog
 
+## v33
+
+- Made `jakarta-imports` an always-on FOUNDATION family so `migrate migrate` does not depend on MTA emitting every `javax` namespace finding.
+- Reordered FOUNDATION migration to run `faces-managed-beans` → `jakarta-imports` → `jakarta-dependencies` → `jakarta-descriptors`, preserving legacy source type attribution until namespace migration is complete.
+- Added explicit Maven migration for `javax.inject:javax.inject` and `javax.inject:javax.inject-api` to `jakarta.inject:jakarta.inject-api:2.0.1` with `provided` scope.
+- Expanded automatic residual checks to cover all curated Jakarta EE source namespaces, including `javax.inject`, while excluding removed `javax.faces.bean` APIs from the generic namespace family.
+- Added regression tests for Jakarta Inject dependency/import migration and catalog ordering.
+- Explicit `migrate migrate --family NAME` now reruns the selected family even if an older migration state marked it complete, enabling targeted Jakarta namespace repair after upgrading the Workbench.
+
 ## v31
 
 - Changed Maven execution to prefer the system `mvn` on `PATH`, matching a developer's direct Maven invocation; a project Maven Wrapper is now fallback-only.

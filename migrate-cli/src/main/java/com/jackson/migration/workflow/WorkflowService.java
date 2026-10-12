@@ -104,6 +104,7 @@ public class WorkflowService {
         MigrationState state = states.load(project).orElseGet(MigrationState::new);
         ensureGitBaseline(project, plan, state);
         boolean reviewConfirmed = "REVIEW_CONFIRMED".equals(state.status);
+        boolean explicitFamilyRun = familyFilter != null && !familyFilter.isBlank();
 
         List<MigrationPlan.PhasePlan> phases = select(plan, phaseFilter, familyFilter, catalog);
         for (MigrationPlan.PhasePlan phase : phases) {
@@ -118,7 +119,8 @@ public class WorkflowService {
                 return;
             }
             for (MigrationPlan.Task task : phase.tasks) {
-                if (state.completedFamilies.contains(task.family)) continue;
+                if (!explicitFamilyRun && state.completedFamilies.contains(task.family)) continue;
+                if (explicitFamilyRun) state.completedFamilies.remove(task.family);
                 state.currentPhase = phase.name;
                 state.currentFamily = task.family;
                 state.status = "IN_PROGRESS";

@@ -29,8 +29,8 @@ The former catch-all `foundation` family has been split into focused tasks so ju
 | Family | Purpose |
 |---|---|
 | `platform-baseline` | Confirm Java 21 and EAP 8 / Jakarta EE 10 baseline. |
-| `jakarta-dependencies` | Consolidate Maven `javax` → `jakarta` dependency findings. |
-| `jakarta-imports` | Consolidate Java import namespace migration. |
+| `jakarta-imports` | Always run the curated Java EE `javax` → `jakarta` source namespace migration before dependency replacement. |
+| `jakarta-dependencies` | Consolidate Maven `javax` → `jakarta` dependency findings and add the Jakarta EE 10 compile baseline. |
 | `jakarta-descriptors` | Consolidate deployment descriptor namespace/schema/version changes. |
 | `faces-managed-beans` | Combine built-in EAP 8 Faces and custom Faces 4 managed-bean/scope/injection findings. |
 | `faces-compatibility` | Remaining Jakarta Faces 4 compatibility work. |

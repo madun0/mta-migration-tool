@@ -43,11 +43,15 @@ class CatalogStructureTest {
 
         List<String> familyOrder = new ArrayList<>(catalog.families.keySet());
         int facesManagedBeansIndex = familyOrder.indexOf("faces-managed-beans");
+        int jakartaImportsIndex = familyOrder.indexOf("jakarta-imports");
         int jakartaDependenciesIndex = familyOrder.indexOf("jakarta-dependencies");
         assertTrue(facesManagedBeansIndex >= 0);
+        assertTrue(jakartaImportsIndex >= 0);
         assertTrue(jakartaDependenciesIndex >= 0);
-        assertTrue(facesManagedBeansIndex < jakartaDependenciesIndex,
-                "faces-managed-beans must run before jakarta-dependencies so legacy javax.faces.bean types remain attributable");
+        assertTrue(facesManagedBeansIndex < jakartaImportsIndex,
+                "faces-managed-beans must run before generic namespace migration so removed javax.faces.bean APIs receive semantic migration");
+        assertTrue(jakartaImportsIndex < jakartaDependenciesIndex,
+                "jakarta-imports must run before jakarta-dependencies so legacy javax types remain attributable while imports are rewritten");
 
         MigrationCatalog.FamilySpec requestContext = catalog.families.get("request-context");
         assertTrue(requestContext != null && requestContext.always,
@@ -62,9 +66,14 @@ class CatalogStructureTest {
 
         MigrationCatalog.FamilySpec jakartaImports = catalog.families.get("jakarta-imports");
         assertNotNull(jakartaImports);
+        assertTrue(jakartaImports.always,
+                "jakarta-imports must always run because MTA may not report every migratable javax namespace");
         assertFalse(jakartaImports.compileAfterApply);
+        assertTrue(jakartaImports.forbiddenPatterns.contains("import javax.inject."));
+        assertFalse(jakartaImports.forbiddenPatterns.contains("import javax.faces."),
+                "generic Faces residual scanning must not claim javax.faces.bean, which is owned by the assisted managed-bean family");
         assertTrue(jakartaImports.reviewChecklist.stream()
-                .anyMatch(item -> item.contains("During phase validation")));
+                .anyMatch(item -> item.contains("before replacing legacy javax API dependencies")));
 
 
         assertEquals("ASSISTED", requestContext.automation);

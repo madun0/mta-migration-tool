@@ -31,11 +31,11 @@ The Workbench now provides first-party OpenRewrite recipes for the deterministic
 
 | Migration family | Automation | Recipe | Compile gate |
 | --- | --- | --- | --- |
-| `platform-baseline` | ASSISTED | `com.jackson.mta.foundation.PlatformBaselineJava21` | immediate |
-| `jakarta-dependencies` | AUTOMATIC | `com.jackson.mta.foundation.MigrateJakartaDependencies` | deferred |
-| `jakarta-imports` | AUTOMATIC | `com.jackson.mta.foundation.MigrateJavaxImports` | deferred |
-| `jakarta-descriptors` | AUTOMATIC | `com.jackson.mta.foundation.MigrateJakartaDescriptors` | deferred |
+| `platform-baseline` | ASSISTED | `com.jackson.mta.foundation.PlatformBaselineJava21` | deferred |
 | `faces-managed-beans` | ASSISTED | `com.jackson.mta.foundation.MigrateFacesManagedBeans` | deferred until review |
+| `jakarta-imports` | AUTOMATIC / always-on | `com.jackson.mta.foundation.MigrateJavaxImports` | deferred |
+| `jakarta-dependencies` | AUTOMATIC | `com.jackson.mta.foundation.MigrateJakartaDependencies` | deferred |
+| `jakarta-descriptors` | AUTOMATIC | `com.jackson.mta.foundation.MigrateJakartaDescriptors` | deferred |
 | `primefaces-baseline` | AUTOMATIC | `com.jackson.mta.foundation.UpgradePrimeFacesDependency` | deferred |
 
 ### Why some compile gates are deferred
@@ -103,16 +103,20 @@ platform API to avoid redundant one-off fallback dependencies.
 
 ## Foundation ordering requirement
 
-`faces-managed-beans` must execute before `jakarta-dependencies`. The managed-bean migration relies on the legacy JSF API still being present so OpenRewrite can attribute `javax.faces.bean.ManagedBean` and `javax.faces.bean.ViewScoped`. Replacing `javax.faces-api` with `jakarta.faces-api` first removes those legacy types from the parser classpath and prevents `ChangeType` from matching them.
+Source-side transformations must execute while the legacy Java EE / JSF APIs are still available to OpenRewrite for type attribution. `faces-managed-beans` therefore runs first so removed `javax.faces.bean` types receive semantic CDI/Jakarta Faces replacements rather than a blind namespace rename. `jakarta-imports` runs next and is always scheduled, even when MTA does not emit a namespace finding for packages such as `javax.inject`, `javax.servlet`, or supported `javax.faces.*` subpackages. Only after those source transformations complete does `jakarta-dependencies` replace the legacy Maven APIs with Jakarta EE 10 coordinates.
 
 The intended foundation order is therefore:
 
 1. `faces-managed-beans`
-2. `jakarta-dependencies`
-3. `jakarta-imports`
+2. `jakarta-imports`
+3. `jakarta-dependencies`
 4. `jakarta-descriptors`
 
-Compilation remains deferred until the foundation transformations have completed.
+This ordering prevents an application from losing the legacy parser classpath before its imports are rewritten. Compilation remains deferred until the foundation transformations have completed.
+
+When a legacy application explicitly declares `javax.inject:javax.inject` (or `javax.inject:javax.inject-api`), `MigrateJakartaDependencies` converts that declaration to `jakarta.inject:jakarta.inject-api:2.0.1` with `provided` scope. Applications that relied entirely on the application server still receive the provided `jakarta.platform:jakarta.jakartaee-api:10.0.0` compile baseline.
+
+If an application was already migrated with an older Workbench release and `jakarta-imports` was marked complete while legacy imports remain, v33 allows an explicit repair pass with `migrate migrate --family jakarta-imports`. For the cleanest validation of ordering changes, `migrate restart` from a clean application Git state and rerun assess/plan/migrate.
 
 ## Deterministic RequestContext migration
 

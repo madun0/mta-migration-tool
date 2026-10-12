@@ -137,6 +137,22 @@ recipeList:
       newVersion: 4.0.1
       overrideManagedVersion: false
       changeManagedDependency: true
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: javax.inject
+      oldArtifactId: javax.inject
+      newGroupId: jakarta.inject
+      newArtifactId: jakarta.inject-api
+      newVersion: 2.0.1
+      overrideManagedVersion: false
+      changeManagedDependency: true
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: javax.inject
+      oldArtifactId: javax.inject-api
+      newGroupId: jakarta.inject
+      newArtifactId: jakarta.inject-api
+      newVersion: 2.0.1
+      overrideManagedVersion: false
+      changeManagedDependency: true
   # Normalize explicitly declared API dependencies to provided scope. EAP supplies the
   # implementations at runtime; these declarations exist only for migration/build attribution.
   - org.openrewrite.maven.ChangeDependencyScope: { groupId: jakarta.faces, artifactId: jakarta.faces-api, newScope: provided }
@@ -148,6 +164,7 @@ recipeList:
   - org.openrewrite.maven.ChangeDependencyScope: { groupId: jakarta.transaction, artifactId: jakarta.transaction-api, newScope: provided }
   - org.openrewrite.maven.ChangeDependencyScope: { groupId: jakarta.xml.bind, artifactId: jakarta.xml.bind-api, newScope: provided }
   - org.openrewrite.maven.ChangeDependencyScope: { groupId: jakarta.ejb, artifactId: jakarta.ejb-api, newScope: provided }
+  - org.openrewrite.maven.ChangeDependencyScope: { groupId: jakarta.inject, artifactId: jakarta.inject-api, newScope: provided }
   # Legacy EAP applications frequently rely on server-provided APIs and declare none of the
   # individual Java EE artifacts. Add the Jakarta EE 10 API as the single compile-time baseline.
   - com.jackson.mta.foundation.EnsureJakartaEe10CompileApi

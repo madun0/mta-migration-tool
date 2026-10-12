@@ -77,6 +77,48 @@ families:
     - Review eager managed-bean initialization; CDI @Named has no direct eager=true equivalent.
     - Run affected page and bean lifecycle tests after conversion.
     compileAfterApply: false
+  jakarta-imports:
+    description: Migrate Java source imports from javax namespaces to their Jakarta equivalents where the API moved.
+    phase: FOUNDATION
+    automation: AUTOMATIC
+    mtaRuleIds:
+    - javax-to-jakarta-import-00001
+    mtaRulePrefixes: []
+    recipes:
+    - com.jackson.mta.foundation.MigrateJavaxImports
+    cleanupRecipes: []
+    guide: docs/FOUNDATION-MIGRATION.md
+    forbiddenPatterns:
+    - import javax.annotation.
+    - import javax.validation.
+    - import javax.servlet.
+    - import javax.persistence.
+    - import javax.enterprise.
+    - import javax.inject.
+    - import javax.ejb.
+    - import javax.transaction.
+    - import javax.ws.rs.
+    - import javax.xml.bind.
+    - import javax.json.
+    - import javax.mail.
+    - import javax.activation.
+    - import javax.faces.application.
+    - import javax.faces.component.
+    - import javax.faces.context.
+    - import javax.faces.convert.
+    - import javax.faces.event.
+    - import javax.faces.flow.
+    - import javax.faces.lifecycle.
+    - import javax.faces.render.
+    - import javax.faces.validator.
+    - import javax.faces.view.
+    - import javax.faces.webapp.
+    always: true
+    reviewChecklist:
+    - Run this namespace migration before replacing legacy javax API dependencies so OpenRewrite can retain source-side type attribution.
+    - Do not migrate Java SE javax packages such as javax.crypto, javax.net, javax.sql or javax.xml.parsers.
+    - During phase validation, compile to identify removed Jakarta EE APIs that require semantic migration rather than package rename.
+    compileAfterApply: false
   jakarta-dependencies:
     description: Replace legacy javax Maven APIs with Jakarta EE equivalents and establish the Jakarta EE 10 provided compile
       baseline required for EAP 8 migration.
@@ -96,32 +138,9 @@ families:
     always: true
     reviewChecklist:
     - Verify the provided jakarta.platform:jakarta.jakartaee-api:10.0.0 compile baseline is compatible with the approved EAP 8 BOM/dependency-management strategy.
-    - Review explicitly migrated Jakarta API dependencies and remove redundant versions when the target EAP BOM manages them.
+    - Review explicitly migrated Jakarta API dependencies, including jakarta.inject:jakarta.inject-api when it was declared directly, and remove redundant versions when the target EAP BOM manages them.
     - Defer compilation until the Jakarta dependency, import, descriptor, and Faces source transformations for this phase
       have completed.
-    compileAfterApply: false
-  jakarta-imports:
-    description: Migrate Java source imports from javax namespaces to their Jakarta equivalents where the API moved.
-    phase: FOUNDATION
-    automation: AUTOMATIC
-    mtaRuleIds:
-    - javax-to-jakarta-import-00001
-    mtaRulePrefixes: []
-    recipes:
-    - com.jackson.mta.foundation.MigrateJavaxImports
-    cleanupRecipes: []
-    guide: docs/FOUNDATION-MIGRATION.md
-    forbiddenPatterns:
-    - import javax.faces.
-    - import javax.validation.
-    - import javax.annotation.
-    - import javax.servlet.
-    - import javax.persistence.
-    always: false
-    reviewChecklist:
-    - Do not migrate Java SE javax packages such as javax.crypto, javax.net, javax.sql or javax.xml.parsers.
-    - During phase validation, compile to identify removed Jakarta EE APIs that require semantic migration rather than package
-      rename.
     compileAfterApply: false
   jakarta-descriptors:
     description: Modernize Jakarta EE deployment descriptor namespaces, schemas, versions and javax-prefixed descriptor class

@@ -8,7 +8,7 @@
 | `migrate plan` | Map findings to ordered phases/families. |
 | `migrate migrate` | Execute the plan with dry-run, apply, checkpoint and compile validation. |
 | `migrate migrate --phase NAME` | Run only one planned phase. |
-| `migrate migrate --family NAME` | Explicitly run one catalog family. |
+| `migrate migrate --family NAME` | Explicitly run or rerun one catalog family, even if it was previously marked complete. |
 | `migrate status` | Show current state, family and checkpoint. |
 | `migrate resume` | Continue the next unfinished family; after `REVIEW_REQUIRED`, continue into cleanup. |
 | `migrate rollback` | Roll back to the latest checkpoint. |
